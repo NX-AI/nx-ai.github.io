@@ -105,7 +105,15 @@
   .venue-preprint { color: var(--venue-preprint); }
   .license { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--soft); }
   .license .icon { color: var(--grey); }
-  .install { display: block; overflow-x: auto; white-space: nowrap; padding: 8px 10px; background: var(--sub); border: 1px solid var(--border); color: var(--teal); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  .install-box { display: flex; align-items: center; background: var(--sub); border: 1px solid var(--border); }
+  .install { flex: 1; min-width: 0; display: block; overflow-x: auto; white-space: nowrap; padding: 8px 10px; color: var(--teal); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  .copy-btn { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 34px; height: 34px; margin-right: 2px; padding: 0; border: 0; background: transparent; color: var(--grey); cursor: pointer; }
+  .copy-btn[hidden] { display: none; }
+  .copy-btn:hover { color: var(--teal); }
+  .copy-btn .icon { width: 15px; height: 15px; }
+  .copy-btn .i-done, .copy-btn.copied .i-copy { display: none; }
+  .copy-btn.copied .i-done { display: block; }
+  .copy-btn.copied { color: var(--teal); }
   .links { display: flex; flex-wrap: wrap; gap: 2px 18px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 14px; font-weight: 500; }
   .links a { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; }
   .links .icon { color: var(--teal); }
@@ -173,6 +181,8 @@
   <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></g></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M8 7h9v9"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
   <symbol id="i-scale" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/><path d="M2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/></g></symbol>
@@ -275,7 +285,10 @@
             <span class="license"><svg class="icon" aria-hidden="true"><use href="#i-scale"/></svg><span><span class="sr-only">Licence: </span>{{ p.license }}</span></span>
           </div>
           {%- if p.install %}
-          <code class="install">{{ p.install }}</code>
+          <div class="install-box">
+            <code class="install">{{ p.install }}</code>
+            <button type="button" class="copy-btn" title="Copy to clipboard" aria-label="Copy {{ p.install }}" hidden><svg class="icon i-copy" aria-hidden="true"><use href="#i-copy"/></svg><svg class="icon i-done" aria-hidden="true"><use href="#i-check"/></svg></button>
+          </div>
           {%- endif %}
           <div class="links">
             {%- for l in p.links %}
@@ -370,6 +383,7 @@
     </div>
   </div>
 </footer>
+<div id="copy-status" class="sr-only" role="status" aria-live="polite"></div>
 
 <script>
   (function () {
@@ -387,6 +401,29 @@
       });
     });
     syncTheme();
+
+    // Copy buttons for the pip install commands; hidden without JavaScript or Clipboard API.
+    var status = document.getElementById("copy-status");
+    if (navigator.clipboard && window.isSecureContext) {
+      document.querySelectorAll(".copy-btn").forEach(function (b) {
+        var timer = null;
+        b.hidden = false;
+        b.addEventListener("click", function () {
+          var text = b.parentNode.querySelector(".install").textContent.trim();
+          navigator.clipboard.writeText(text).then(function () {
+            b.classList.add("copied");
+            b.title = "Copied";
+            status.textContent = "Copied: " + text;
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+              b.classList.remove("copied");
+              b.title = "Copy to clipboard";
+              status.textContent = "";
+            }, 1500);
+          });
+        });
+      });
+    }
 
     var filters = document.querySelector(".filters");
     var groups = document.querySelectorAll("[data-group]");
