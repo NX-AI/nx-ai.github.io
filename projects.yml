@@ -1,0 +1,136 @@
+# Content of https://nx-ai.github.io
+# This is the only file you need to edit to add, remove or change a project.
+# Star counts are fetched from the GitHub API at build time and are not stored here.
+#
+# Venue "conf" must be one of: NeurIPS, ICLR, ICML, preprint
+# Link "type" must be one of: github, docs, paper, huggingface, demo, pypi, page, pro
+# Licences must be final; the build fails on placeholders such as "[LICENSE TBC]".
+
+documentation:
+  - title: TiRex-2 documentation
+    description: Installation, quickstart, covariates, streaming, deployment and API reference.
+    url: https://nx-ai.github.io/tirex-2/
+    icon: book
+  - title: TiRex documentation
+    description: Documentation for the original univariate TiRex forecasting model.
+    url: https://nx-ai.github.io/tirex/
+    icon: book
+  - title: Vision-LSTM project page
+    description: Overview, results and pretrained models for Vision-LSTM.
+    url: https://nx-ai.github.io/vision-lstm/
+    icon: globe
+  - title: Publications and resources
+    description: Papers, code and live demos across all NXAI model families, with a timeline view.
+    url: https://nx-ai.github.io/linktree/
+    icon: list
+
+groups:
+  - id: time-series
+    title: Time series forecasting
+    projects:
+      - name: TiRex-2
+        repo: NX-AI/tirex-2
+        description: Pretrained multivariate time series forecasting model with past and future-known covariates and quantile forecasts, released for zero-shot use.
+        venue: { conf: NeurIPS, detail: "2026 · Oral" }
+        license: Apache 2.0
+        install: pip install tirex-2
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/tirex-2" }
+          - { type: docs, label: Docs, url: "https://nx-ai.github.io/tirex-2/" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2607.01204" }
+          - { type: huggingface, label: Hugging Face, url: "https://huggingface.co/NX-AI/TiRex-2" }
+          - { type: demo, label: Demo, url: "https://huggingface.co/spaces/NX-AI/TiRex-2-demo" }
+          - { type: pro, label: TiRex-2 PRO, url: "https://nx-ai.github.io/tirex-2/pro/" }
+      - name: TiRex
+        repo: NX-AI/tirex
+        description: Zero-shot univariate forecasting model for long and short horizons with enhanced in-context learning, based on xLSTM.
+        venue: { conf: NeurIPS, detail: "2025" }
+        license: NXAI Community License
+        install: pip install tirex-ts
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/tirex" }
+          - { type: docs, label: Docs, url: "https://nx-ai.github.io/tirex/" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2505.23719" }
+          - { type: huggingface, label: Hugging Face, url: "https://huggingface.co/NX-AI/TiRex" }
+          - { type: demo, label: Demo, url: "https://huggingface.co/spaces/NX-AI/TiRex-demo" }
+
+  - id: xlstm
+    title: xLSTM architecture and models
+    projects:
+      - name: xLSTM
+        repo: NX-AI/xlstm
+        description: Official PyTorch implementation of the xLSTM architecture, including the xLSTM 7B language model.
+        venue: { conf: NeurIPS, detail: "2024" }
+        license: Apache 2.0
+        install: pip install xlstm
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/xlstm" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2405.04517" }
+          - { type: huggingface, label: xLSTM 7B, url: "https://huggingface.co/NX-AI/xLSTM-7b" }
+          - { type: pypi, label: PyPI, url: "https://pypi.org/project/xlstm/" }
+      - name: xLSTM JAX
+        repo: NX-AI/xlstm-jax
+        description: Official JAX implementation of xLSTM with efficient training and inference code.
+        venue: { conf: NeurIPS, detail: "2024" }
+        license: NXAI Community License
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/xlstm-jax" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2405.04517" }
+      - name: Vision-LSTM
+        repo: NX-AI/vision-lstm
+        description: Vision-LSTM (ViL) adapts xLSTM as a generic backbone for computer vision. Includes pretrained models and a full training pipeline.
+        venue: { conf: ICLR, detail: "2025" }
+        license: MIT / Apache 2.0
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/vision-lstm" }
+          - { type: page, label: Project page, url: "https://nx-ai.github.io/vision-lstm/" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2406.04303" }
+      - name: xLSTM Scaling Laws
+        repo: NX-AI/xlstm_scaling_laws
+        description: Code and data for the scaling behaviour of xLSTM and Transformer models from 80M to 7B parameters.
+        venue: { conf: ICLR, detail: "2026" }
+        license: Apache 2.0
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/xlstm_scaling_laws" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2510.02228" }
+
+  - id: efficiency
+    title: Efficient training and inference
+    projects:
+      - name: mLSTM Kernels
+        repo: NX-AI/mlstm_kernels
+        description: "Tiled Flash Linear Attention: kernel library for fast and efficient mLSTM training and inference."
+        venue: { conf: NeurIPS, detail: "2025" }
+        license: NXAI Community License
+        install: pip install mlstm_kernels
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/mlstm_kernels" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2503.14376" }
+          - { type: pypi, label: PyPI, url: "https://pypi.org/project/mlstm_kernels/" }
+      - name: FlashRNN
+        repo: NX-AI/flashrnn
+        description: CUDA and Triton kernels for LSTM, GRU, Elman networks and sLSTM, optimised for modern GPU hardware.
+        venue: { conf: ICLR, detail: "2025" }
+        license: Apache 2.0
+        install: pip install flashrnn
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/flashrnn" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2412.07752" }
+          - { type: pypi, label: PyPI, url: "https://pypi.org/project/flashrnn/" }
+      - name: KronLSTM
+        repo: NX-AI/KronLSTM
+        description: Triton kernels and a PyTorch layer for KronLSTM, a Kronecker delta rule for long-context linear attention.
+        venue: { conf: preprint, detail: "Preprint 2026" }
+        license: MIT
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/KronLSTM" }
+          - { type: paper, label: Paper, url: "https://arxiv.org/abs/2610.26834" }
+          - { type: huggingface, label: Models, url: "https://huggingface.co/collections/NX-AI/kronlstm" }
+      - name: CoupledNorm
+        repo: NX-AI/coupled-norm
+        description: Efficient normalisation via shared RMS statistics, reducing the number of operations on the critical path of each Transformer block.
+        venue: { conf: ICML, detail: "2026 Workshop · AdaptFM" }
+        license: Apache 2.0
+        links:
+          - { type: github, label: GitHub, url: "https://github.com/NX-AI/coupled-norm" }
+          - { type: paper, label: Paper, url: "https://openreview.net/forum?id=DnPhmFIanE" }
