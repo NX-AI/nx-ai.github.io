@@ -94,6 +94,7 @@
   .repo { font-size: 13px; color: var(--grey); }
   .stars { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--soft); white-space: nowrap; }
   .stars .icon { width: 14px; height: 14px; color: var(--grey); }
+  .stars .src { min-width: 28px; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--grey); }
   .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   .desc { flex-grow: 1; margin: 0; font-size: 14px; line-height: 1.55; }
   .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
@@ -115,13 +116,11 @@
   .tile { display: flex; flex-direction: column; gap: 4px; padding: 20px 22px; background: var(--card); border-top: 2px solid var(--teal); }
   .tile-value { font-size: 34px; font-weight: 700; line-height: 1.15; }
   .tile-label { font-size: 14px; color: var(--soft); }
+  .tile-note { font-size: 13px; color: var(--grey); }
   .chart-panel { display: flex; flex-direction: column; gap: 16px; padding: 22px; background: var(--card); }
   .chart-panel[hidden] { display: none; }
   .chart-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
   .chart-top h3 { font-size: 18px; }
-  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
-  .seg button { min-height: 40px; padding: 0 14px; border: 1px solid var(--border2); background: transparent; color: var(--soft); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
-  .seg button[aria-pressed="true"] { border-color: var(--teal); background: var(--sub); color: var(--teal); }
   .legend { display: flex; flex-wrap: wrap; gap: 6px 8px; }
   .legend button { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 1px solid var(--border); background: transparent; color: var(--soft); font: inherit; font-size: 13px; cursor: pointer; }
   .legend button[aria-pressed="false"] { color: var(--grey); text-decoration: line-through; }
@@ -147,7 +146,7 @@
   .stats-section th:first-child, .stats-section td:first-child { text-align: left; }
   .stats-section thead th { position: sticky; top: 0; background: var(--card); color: var(--soft); font-size: 13px; font-weight: 600; }
   .stats-section tbody tr:last-child td { border-bottom: 0; }
-  .stats-section td .repo { display: block; font-size: 12px; }
+  .stats-section td .repo, .stats-section td .sub { display: block; font-size: 12px; color: var(--grey); }
   .stats-section .na { color: var(--grey); }
 
   .site-footer { margin-top: 32px; border-top: 1px solid var(--border); }
@@ -190,7 +189,7 @@
       <nav class="nav" aria-label="Main">
         <a href="#projects">Projects</a>
         <a href="#documentation">Documentation</a>
-        {%- if star_total or download_total %}
+        {%- if star_total or download_total or hf_total %}
         <a href="#statistics">Statistics</a>
         {%- endif %}
         <a href="https://nx-ai.github.io/linktree/">Publications</a>
@@ -256,13 +255,16 @@
               <h4>{{ p.name }}</h4>
               <span class="repo">{{ p.repo }}</span>
             </div>
-            {%- if p.stars or p.downloads %}
+            {%- if p.stars or p.downloads or p.hf_downloads %}
             <div class="stats">
               {%- if p.stars %}
               <span class="stars"><svg class="icon" aria-hidden="true"><use href="#i-star"/></svg>{{ p.stars }}<span class="sr-only"> GitHub stars</span></span>
               {%- endif %}
               {%- if p.downloads %}
-              <span class="stars" title="PyPI downloads, all time"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>{{ p.downloads }}<span class="sr-only"> PyPI downloads, all time</span></span>
+              <span class="stars" title="PyPI downloads, all time"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>{{ p.downloads }}<span class="src" aria-hidden="true">PyPI</span><span class="sr-only"> PyPI downloads, all time</span></span>
+              {%- endif %}
+              {%- if p.hf_downloads %}
+              <span class="stars" title="Hugging Face model downloads, all time"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>{{ p.hf_downloads }}<span class="src" aria-hidden="true">HF</span><span class="sr-only"> Hugging Face model downloads, all time</span></span>
               {%- endif %}
             </div>
             {%- endif %}
@@ -287,7 +289,7 @@
     {%- endfor %}
   </section>
 
-  {%- if star_total or download_total %}
+  {%- if star_total or download_total or hf_total %}
   <section id="statistics" class="stats-section" aria-labelledby="stats-title">
     <div class="section-head">
       <div class="tag">USAGE</div>
@@ -298,8 +300,10 @@
       <div class="tile"><span class="tile-value">{{ star_total }}</span><span class="tile-label">GitHub stars across {{ total }} repositories</span></div>
       {%- endif %}
       {%- if download_total %}
-      <div class="tile"><span class="tile-value">{{ download_total }}</span><span class="tile-label">PyPI downloads, all time</span></div>
-      <div class="tile"><span class="tile-value">{{ download_recent }}</span><span class="tile-label">PyPI downloads in the last 30 days</span></div>
+      <div class="tile"><span class="tile-value">{{ download_total }}</span><span class="tile-label">PyPI downloads, all time</span><span class="tile-note">{{ download_recent or "0" }} in the last 30 days</span></div>
+      {%- endif %}
+      {%- if hf_total %}
+      <div class="tile"><span class="tile-value">{{ hf_total }}</span><span class="tile-label">Hugging Face model downloads, all time</span><span class="tile-note">{{ hf_recent }} in the last 30 days</span></div>
       {%- endif %}
     </div>
 
@@ -307,10 +311,6 @@
     <div class="chart-panel" hidden>
       <div class="chart-top">
         <h3 class="chart-title"></h3>
-        <div class="seg" role="group" aria-label="Chart">
-          <button type="button" data-chart="stars" aria-pressed="false">GitHub stars</button>
-          <button type="button" data-chart="downloads" aria-pressed="false">PyPI downloads</button>
-        </div>
       </div>
       <div class="legend" role="group" aria-label="Show or hide series"></div>
       <div class="plot-wrap">
@@ -328,17 +328,17 @@
 
     <div class="stats-table-card">
       <table>
-        <caption class="sr-only">Stars and downloads per project</caption>
+        <caption class="sr-only">Stars and all-time downloads per project, with downloads in the last 30 days below each total</caption>
         <thead>
-          <tr><th scope="col">Project</th><th scope="col">GitHub stars</th><th scope="col">PyPI downloads, all time</th><th scope="col">PyPI downloads, last 30 days</th></tr>
+          <tr><th scope="col">Project</th><th scope="col">GitHub stars</th><th scope="col">PyPI downloads</th><th scope="col">Hugging Face downloads</th></tr>
         </thead>
         <tbody>
           {%- for p in stat_rows %}
           <tr>
             <td>{{ p.name }}<span class="repo">{{ p.repo }}</span></td>
             <td>{{ p.stars or "0" }}</td>
-            <td>{% if p.downloads %}{{ p.downloads }}{% else %}<span class="na">not on PyPI</span>{% endif %}</td>
-            <td>{% if p.downloads %}{{ p.downloads_recent or "0" }}{% else %}<span class="na">–</span>{% endif %}</td>
+            <td>{% if p.downloads %}{{ p.downloads }}<span class="sub">{{ p.downloads_recent or "0" }} last 30 days</span>{% else %}<span class="na">–</span>{% endif %}</td>
+            <td>{% if p.has_hf %}{{ p.hf_downloads_all }}<span class="sub">{{ p.hf_downloads_recent }} last 30 days</span>{% else %}<span class="na">–</span>{% endif %}</td>
           </tr>
           {%- endfor %}
         </tbody>
@@ -405,14 +405,11 @@
     if (!dataEl || !panel) return;
     var charts = JSON.parse(dataEl.textContent);
     var META = {
-      stars: { title: "GitHub stars over time", what: "stars", date: "Week of ",
-               caption: "Cumulative stars per repository at the end of each week. Repositories outside the top five are summed as Other." },
       downloads: { title: "PyPI downloads per week", what: "downloads", date: "Week of ",
                    caption: "Downloads per package for each complete week (Monday to Sunday). The current week is left out until it is complete." }
     };
     var NS = "http://www.w3.org/2000/svg";
     var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    var tabs = panel.querySelectorAll("[data-chart]");
     var titleEl = panel.querySelector(".chart-title");
     var legend = panel.querySelector(".legend");
     var plot = panel.querySelector(".plot");
@@ -638,7 +635,6 @@
       current = name;
       active = null;
       tip.hidden = true;
-      tabs.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.chart === name)); });
       titleEl.textContent = META[name].title;
       caption.textContent = META[name].caption;
       buildLegend();
@@ -646,14 +642,9 @@
       draw();
     }
 
-    tabs.forEach(function (b) {
-      if (!charts[b.dataset.chart]) { b.remove(); return; }
-      b.addEventListener("click", function () { select(b.dataset.chart); });
-    });
-    tabs = panel.querySelectorAll("[data-chart]");
-    if (!tabs.length) return;
+    if (!charts.downloads) return;
     panel.hidden = false;
-    select(tabs[0].dataset.chart);
+    select("downloads");
     if (window.ResizeObserver) {
       var lastW = plot.clientWidth;
       new ResizeObserver(function () {

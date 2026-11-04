@@ -2,6 +2,8 @@
 # This is the only file you need to edit to add, remove or change a project.
 # Star counts and download numbers are fetched at build time and are not stored here.
 # Optional "pypi": PyPI package name; its downloads are fetched from the public ClickHouse PyPI dataset.
+# Optional "hf_models": Hugging Face model ids; their downloads are summed per project.
+# The build warns about NX-AI models on Hugging Face that no project lists.
 #
 # Venue "conf" must be one of: NeurIPS, ICLR, ICML, preprint
 # Link "type" must be one of: github, docs, paper, huggingface, demo, pypi, page, pro
@@ -36,6 +38,7 @@ groups:
         license: Apache 2.0
         install: pip install tirex-2
         pypi: tirex-2
+        hf_models: [NX-AI/TiRex-2, NX-AI/TiRex-2-gifteval-zs, NX-AI/TiRex-2-fevbench, NX-AI/TiRex-2-gifteval-pretrain]
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/tirex-2" }
           - { type: docs, label: Docs, url: "https://nx-ai.github.io/tirex-2/" }
@@ -50,6 +53,7 @@ groups:
         license: NXAI Community License
         install: pip install tirex-ts
         pypi: tirex-ts
+        hf_models: [NX-AI/TiRex, NX-AI/TiRex-1.1-gifteval]
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/tirex" }
           - { type: docs, label: Docs, url: "https://nx-ai.github.io/tirex/" }
@@ -67,6 +71,7 @@ groups:
         license: Apache 2.0
         install: pip install xlstm
         pypi: xlstm
+        hf_models: [NX-AI/xLSTM-7b]
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/xlstm" }
           - { type: paper, label: Paper, url: "https://arxiv.org/abs/2405.04517" }
@@ -94,6 +99,7 @@ groups:
         description: Code and data for the scaling behaviour of xLSTM and Transformer models from 80M to 7B parameters.
         venue: { conf: ICLR, detail: "2026" }
         license: Apache 2.0
+        hf_models: [NX-AI/xlstm_scaling_laws]
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/xlstm_scaling_laws" }
           - { type: paper, label: Paper, url: "https://arxiv.org/abs/2510.02228" }
@@ -128,6 +134,7 @@ groups:
         description: Triton kernels and a PyTorch layer for KronLSTM, a Kronecker delta rule for long-context linear attention.
         venue: { conf: preprint, detail: "Preprint 2026" }
         license: MIT
+        hf_models: [NX-AI/KronLSTM-1.5B-100B, NX-AI/KronLSTM-1.5B-100B-32k, NX-AI/KronLSTM-SWA-1.5B-100B, NX-AI/KronLSTM-SWA-1.5B-100B-32k]
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/KronLSTM" }
           - { type: paper, label: Paper, url: "https://arxiv.org/abs/2610.26834" }
