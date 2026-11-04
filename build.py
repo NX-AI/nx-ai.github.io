@@ -4,9 +4,15 @@ Usage:
     pip install -r requirements.txt
     python build.py              # writes _site/index.html
 
-Star counts are fetched from the GitHub API at build time. Set GITHUB_TOKEN to avoid
-the low anonymous rate limit (GitHub Actions provides it automatically). If the API is
-unreachable, the page is still built, without star counts.
+Star counts and star history are fetched from the GitHub API at build time. Set
+GITHUB_TOKEN to avoid the low anonymous rate limit (GitHub Actions provides it
+automatically).
+
+PyPI downloads (all-time totals, last 30 days, weekly history) for projects with a "pypi"
+field come from the public ClickHouse PyPI dataset (the data behind clickpy.clickhouse.com),
+queried with its public read-only "play" user. No key or account is needed.
+
+If either source is unreachable, the page is still built, without those numbers.
 """
 
 from __future__ import annotations
@@ -14,6 +20,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -39,6 +46,13 @@ LINK_ICONS = {
 DOC_ICONS = {"book", "globe", "list"}
 # Paths served by other NX-AI repositories. Never create folders with these names here.
 RESERVED_PATHS = {"linktree", "tirex", "tirex-2", "vision-lstm"}
+PYPI_NAME = re.compile(r"^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$")
+USER_AGENT = "nx-ai.github.io-build"
+CLICKHOUSE_URL = "https://sql-clickhouse.clickhouse.com/?user=play"
+# The stars chart shows the most-starred repositories; the rest are summed into "Other".
+STAR_SERIES = 5
+# Categorical colour slots defined in the template (--s1 ... --s8).
+COLOR_SLOTS = 8
 
 
 class ConfigError(ValueError):
@@ -73,6 +87,8 @@ def validate(data: dict) -> None:
                 errors.append(f"{name}: venue conf must be one of {sorted(VENUES)}")
             if not venue.get("detail"):
                 errors.append(f"{name}: venue detail is missing")
+            if "pypi" in p and not PYPI_NAME.match(str(p.get("pypi") or "")):
+                errors.append(f"{name}: pypi '{p.get('pypi')}' is not a valid package name")
             for link in p.get("links", []):
                 if link.get("type") not in LINK_ICONS:
                     errors.append(f"{name}: link type '{link.get('type')}' must be one of {sorted(LINK_ICONS)}")
@@ -87,19 +103,142 @@ def validate(data: dict) -> None:
         raise ConfigError("projects.yml has problems:\n  - " + "\n  - ".join(errors))
 
 
-def fetch_stars(repo: str, token: str | None) -> int | None:
-    request = urllib.request.Request(
-        f"https://api.github.com/repos/{repo}",
-        headers={"Accept": "application/vnd.github+json", "User-Agent": "nx-ai.github.io-build"},
-    )
+def github_get(url: str, token: str | None, accept: str = "application/vnd.github+json"):
+    request = urllib.request.Request(url, headers={"Accept": accept, "User-Agent": USER_AGENT})
     if token:
         request.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.load(response)
+
+
+def fetch_stars(repo: str, token: str | None) -> int | None:
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            return int(json.load(response)["stargazers_count"])
+        return int(github_get(f"https://api.github.com/repos/{repo}", token)["stargazers_count"])
     except (urllib.error.URLError, TimeoutError, KeyError, ValueError) as exc:
         print(f"warning: no star count for {repo}: {exc}", file=sys.stderr)
         return None
+
+
+def fetch_star_dates(repo: str, token: str | None) -> list[dt.date] | None:
+    """Dates on which the current stargazers starred the repository."""
+    dates: list[dt.date] = []
+    try:
+        for page in range(1, 401):  # GitHub lists at most 400 pages of stargazers
+            batch = github_get(
+                f"https://api.github.com/repos/{repo}/stargazers?per_page=100&page={page}",
+                token,
+                accept="application/vnd.github.star+json",
+            )
+            dates += [dt.date.fromisoformat(s["starred_at"][:10]) for s in batch]
+            if len(batch) < 100:
+                break
+    except (urllib.error.URLError, TimeoutError, KeyError, TypeError, ValueError) as exc:
+        print(f"warning: no star history for {repo}: {exc}", file=sys.stderr)
+        return None
+    return sorted(dates)
+
+
+def normalise(package: str) -> str:
+    # PEP 503 normalised name, as used by the PyPI download dataset.
+    return re.sub(r"[-_.]+", "-", package).lower()
+
+
+def clickhouse(query: str) -> list[dict] | None:
+    request = urllib.request.Request(
+        CLICKHOUSE_URL,
+        data=(query + " FORMAT JSON").encode(),
+        headers={"User-Agent": USER_AGENT},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return json.load(response)["data"]
+    except (urllib.error.URLError, TimeoutError, KeyError, ValueError) as exc:
+        print(f"warning: PyPI download query failed: {exc}", file=sys.stderr)
+        return None
+
+
+def fetch_downloads(packages: list[str]) -> tuple[dict, dict] | None:
+    """Return ({package: (total, last_30_days)}, {package: {monday: downloads}})."""
+    # Names are checked against PYPI_NAME in validate(), so quoting them here is safe.
+    names = ", ".join(f"'{normalise(p)}'" for p in packages)
+    totals = clickhouse(
+        "SELECT project, sum(count) AS total, sumIf(count, date >= today() - 30) AS recent "
+        f"FROM pypi.pypi_downloads_per_day WHERE project IN ({names}) GROUP BY project"
+    )
+    weekly = clickhouse(
+        "SELECT project, toString(toMonday(date)) AS week, sum(count) AS n "
+        f"FROM pypi.pypi_downloads_per_day WHERE project IN ({names}) "
+        "GROUP BY project, week ORDER BY project, week"
+    )
+    if totals is None or weekly is None:
+        return None
+    by_total = {r["project"]: (int(r["total"]), int(r["recent"])) for r in totals}
+    by_week: dict[str, dict[dt.date, int]] = {}
+    for r in weekly:
+        by_week.setdefault(r["project"], {})[dt.date.fromisoformat(r["week"])] = int(r["n"])
+    return by_total, by_week
+
+
+def mondays(start: dt.date, end: dt.date) -> list[dt.date]:
+    first = start - dt.timedelta(days=start.weekday())
+    return [first + dt.timedelta(weeks=i) for i in range((end - first).days // 7 + 1)]
+
+
+def star_chart(projects: list[dict], today: dt.date) -> dict | None:
+    """Cumulative stars per week for the most-starred repositories, the rest as "Other"."""
+    with_history = [p for p in projects if p.get("_star_dates")]
+    if not with_history:
+        return None
+    ranked = sorted(with_history, key=lambda p: len(p["_star_dates"]), reverse=True)
+    shown, rest = ranked[:STAR_SERIES], ranked[STAR_SERIES:]
+    weeks = mondays(min(p["_star_dates"][0] for p in with_history), today)
+
+    def cumulative(dates: list[dt.date]) -> list[int | None]:
+        # No value before the first star, so a repository's line starts when it got starred.
+        out: list[int | None] = []
+        i = 0
+        for w in weeks:
+            end = min(w + dt.timedelta(days=6), today)
+            while i < len(dates) and dates[i] <= end:
+                i += 1
+            out.append(i if i else None)
+        return out
+
+    series = [{"name": p["name"], "key": p["repo"], "values": cumulative(p["_star_dates"])} for p in shown]
+    if rest:
+        other = sorted(d for p in rest for d in p["_star_dates"])
+        series.append({"name": f"Other ({len(rest)} repositories)", "key": "_other", "values": cumulative(other)})
+    return {"weeks": [w.isoformat() for w in weeks], "series": series}
+
+
+def download_chart(projects: list[dict], by_week: dict, today: dt.date) -> dict | None:
+    """Weekly downloads per package, complete weeks only."""
+    pkgs = [p for p in projects if by_week.get(normalise(p.get("pypi", "")))]
+    if not pkgs:
+        return None
+    last_complete = today - dt.timedelta(days=today.weekday() + 7)
+    first = min(min(by_week[normalise(p["pypi"])]) for p in pkgs)
+    weeks = mondays(first, last_complete)
+    series = []
+    for p in pkgs:
+        data = by_week[normalise(p["pypi"])]
+        start = min(data)
+        # No value before the package's first download week, so its line starts there.
+        values = [None if w < start else data.get(w, 0) for w in weeks]
+        series.append({"name": p["name"], "key": p["repo"], "values": values})
+    return {"weeks": [w.isoformat() for w in weeks], "series": series}
+
+
+def assign_colors(projects: list[dict], charts: list[dict]) -> None:
+    """One colour per project across both charts, in projects.yml order, never by rank."""
+    used = {s["key"] for c in charts for s in c["series"]}
+    slots = {}
+    for p in projects:
+        if p["repo"] in used and len(slots) < COLOR_SLOTS:
+            slots[p["repo"]] = len(slots) + 1
+    for c in charts:
+        for s in c["series"]:
+            s["color"] = "other" if s["key"] == "_other" else str(slots.get(s["key"], "other"))
 
 
 def display_url(url: str) -> str:
@@ -115,33 +254,65 @@ def main() -> int:
         return 1
 
     token = os.environ.get("GITHUB_TOKEN")
+    now = dt.datetime.now(dt.timezone.utc)
+    today = now.date()
+    projects = [p for group in data["groups"] for p in group["projects"]]
+
     stars_ok = True
-    total = 0
-    for group in data["groups"]:
-        for p in group["projects"]:
-            total += 1
-            count = fetch_stars(p["repo"], token)
-            if count is None:
-                stars_ok = False
-            # Repositories without stars show no count rather than a zero.
-            p["stars"] = f"{count:,}" if count else ""
-            conf = p["venue"]["conf"]
-            detail = str(p["venue"]["detail"])
-            p["venue_label"] = detail if conf == "preprint" else f"{conf} {detail}"
-            p["install"] = p.get("install", "")
-            for link in p["links"]:
-                link["icon"] = LINK_ICONS[link["type"]]
+    star_total = 0
+    for p in projects:
+        count = fetch_stars(p["repo"], token)
+        if count is None:
+            stars_ok = False
+        star_total += count or 0
+        p["star_count"] = count or 0
+        # Repositories without stars show no count rather than a zero.
+        p["stars"] = f"{count:,}" if count else ""
+        p["_star_dates"] = fetch_star_dates(p["repo"], token) if count else []
+        if p["_star_dates"] is None:
+            stars_ok = False
+        conf = p["venue"]["conf"]
+        detail = str(p["venue"]["detail"])
+        p["venue_label"] = detail if conf == "preprint" else f"{conf} {detail}"
+        p["install"] = p.get("install", "")
+        for link in p["links"]:
+            link["icon"] = LINK_ICONS[link["type"]]
+
+    packages = [p["pypi"] for p in projects if p.get("pypi")]
+    downloads = fetch_downloads(packages) if packages else None
+    downloads_ok = downloads is not None or not packages
+    by_total, by_week = downloads or ({}, {})
+    download_total = download_recent = 0
+    for p in projects:
+        total, recent = by_total.get(normalise(p.get("pypi", "")), (0, 0))
+        download_total += total
+        download_recent += recent
+        p["downloads"] = f"{total:,}" if total else ""
+        p["downloads_recent"] = f"{recent:,}" if recent else ""
+
+    charts = {}
+    if (c := star_chart(projects, today)) is not None:
+        charts["stars"] = c
+    if (c := download_chart(projects, by_week, today)) is not None:
+        charts["downloads"] = c
+    assign_colors(projects, list(charts.values()))
+    for p in projects:
+        del p["_star_dates"]
 
     for d in data["documentation"]:
         d["display_url"] = display_url(d["url"])
 
-    now = dt.datetime.now(dt.timezone.utc)
+    missing = [label for label, ok in (("star counts", stars_ok), ("download counts", downloads_ok)) if not ok]
+    sources = "Stars from the GitHub API"
+    if packages:
+        sources += ", PyPI downloads from the public ClickHouse PyPI dataset"
     stars_note = (
-        f"Star counts from the GitHub API, updated {now:%d %B %Y}."
-        if stars_ok
-        else f"Some star counts unavailable at build time ({now:%d %B %Y})."
+        f"Some {' and '.join(missing)} unavailable at build time ({now:%d %B %Y})."
+        if missing
+        else f"{sources}, updated {now:%d %B %Y}."
     )
 
+    stat_rows = sorted(projects, key=lambda p: (-p["star_count"], p["name"].lower()))
     env = Environment(
         loader=FileSystemLoader(ROOT / "templates"),
         autoescape=select_autoescape(["html", "j2"]),
@@ -152,14 +323,21 @@ def main() -> int:
     html = env.get_template("index.html.j2").render(
         documentation=data["documentation"],
         groups=data["groups"],
-        total=total,
+        total=len(projects),
         stars_note=stars_note,
         build_year=now.year,
+        star_total=f"{star_total:,}" if star_total else "",
+        download_total=f"{download_total:,}" if download_total else "",
+        download_recent=f"{download_recent:,}" if download_recent else "",
+        stat_rows=stat_rows,
+        # "</" is escaped so the JSON cannot close the surrounding <script> element.
+        chart_json=json.dumps(charts, separators=(",", ":")).replace("</", "<\\/"),
+        has_charts=bool(charts),
     )
 
     OUT_DIR.mkdir(exist_ok=True)
     (OUT_DIR / "index.html").write_text(html, encoding="utf-8")
-    print(f"wrote {OUT_DIR / 'index.html'} ({total} projects)")
+    print(f"wrote {OUT_DIR / 'index.html'} ({len(projects)} projects)")
     return 0
 
 

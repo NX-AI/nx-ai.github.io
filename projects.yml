@@ -1,6 +1,7 @@
 # Content of https://nx-ai.github.io
 # This is the only file you need to edit to add, remove or change a project.
-# Star counts are fetched from the GitHub API at build time and are not stored here.
+# Star counts and download numbers are fetched at build time and are not stored here.
+# Optional "pypi": PyPI package name; its downloads are fetched from the public ClickHouse PyPI dataset.
 #
 # Venue "conf" must be one of: NeurIPS, ICLR, ICML, preprint
 # Link "type" must be one of: github, docs, paper, huggingface, demo, pypi, page, pro
@@ -34,6 +35,7 @@ groups:
         venue: { conf: NeurIPS, detail: "2026 · Oral" }
         license: Apache 2.0
         install: pip install tirex-2
+        pypi: tirex-2
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/tirex-2" }
           - { type: docs, label: Docs, url: "https://nx-ai.github.io/tirex-2/" }
@@ -47,6 +49,7 @@ groups:
         venue: { conf: NeurIPS, detail: "2025" }
         license: NXAI Community License
         install: pip install tirex-ts
+        pypi: tirex-ts
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/tirex" }
           - { type: docs, label: Docs, url: "https://nx-ai.github.io/tirex/" }
@@ -63,6 +66,7 @@ groups:
         venue: { conf: NeurIPS, detail: "2024" }
         license: Apache 2.0
         install: pip install xlstm
+        pypi: xlstm
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/xlstm" }
           - { type: paper, label: Paper, url: "https://arxiv.org/abs/2405.04517" }
@@ -103,6 +107,7 @@ groups:
         venue: { conf: NeurIPS, detail: "2025" }
         license: NXAI Community License
         install: pip install mlstm_kernels
+        pypi: mlstm_kernels
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/mlstm_kernels" }
           - { type: paper, label: Paper, url: "https://arxiv.org/abs/2503.14376" }
@@ -113,6 +118,7 @@ groups:
         venue: { conf: ICLR, detail: "2025" }
         license: Apache 2.0
         install: pip install flashrnn
+        pypi: flashrnn
         links:
           - { type: github, label: GitHub, url: "https://github.com/NX-AI/flashrnn" }
           - { type: paper, label: Paper, url: "https://arxiv.org/abs/2412.07752" }

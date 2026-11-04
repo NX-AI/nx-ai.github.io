@@ -26,12 +26,14 @@
     --bg:#111111; --card:#1A1A1A; --sub:#0D0D0D; --teal:#5BFFE6; --text:#FFFFFF; --soft:#F5F5F5;
     --grey:#888888; --border:#2A2A2A; --border2:#3A3A3A; --icon-github:#FFFFFF; --icon-hf:#FFD21E;
     --venue-neurips:#A789B6; --venue-iclr:#58C9ED; --venue-icml:#F79011; --venue-preprint:#9A9A9A;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767; --s-other:#8A8A8A;
     color-scheme: dark;
   }
   [data-theme="light"] {
     --bg:#FAFAF8; --card:#FFFFFF; --sub:#F1F1EE; --teal:#00766B; --text:#141414; --soft:#2B2B2B;
     --grey:#6B6B6B; --border:#E4E4E0; --border2:#D4D4D0; --icon-github:#181717; --icon-hf:#FFD21E;
     --venue-neurips:#68448B; --venue-iclr:#0F6F8D; --venue-icml:#985605; --venue-preprint:#6B6B6B;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948; --s-other:#8A8A8A;
     color-scheme: light;
   }
   *, *::before, *::after { box-sizing: border-box; }
@@ -92,6 +94,7 @@
   .repo { font-size: 13px; color: var(--grey); }
   .stars { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--soft); white-space: nowrap; }
   .stars .icon { width: 14px; height: 14px; color: var(--grey); }
+  .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
   .desc { flex-grow: 1; margin: 0; font-size: 14px; line-height: 1.55; }
   .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .venue { display: inline-flex; align-items: center; padding: 2px 9px; border: 1px solid currentColor; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
@@ -107,6 +110,45 @@
   .links .icon { color: var(--teal); }
   .links .i-github { color: var(--icon-github); }
   .links .i-hf { color: var(--icon-hf); }
+
+  .stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .tile { display: flex; flex-direction: column; gap: 4px; padding: 20px 22px; background: var(--card); border-top: 2px solid var(--teal); }
+  .tile-value { font-size: 34px; font-weight: 700; line-height: 1.15; }
+  .tile-label { font-size: 14px; color: var(--soft); }
+  .chart-panel { display: flex; flex-direction: column; gap: 16px; padding: 22px; background: var(--card); }
+  .chart-panel[hidden] { display: none; }
+  .chart-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+  .chart-top h3 { font-size: 18px; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; }
+  .seg button { min-height: 40px; padding: 0 14px; border: 1px solid var(--border2); background: transparent; color: var(--soft); font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .seg button[aria-pressed="true"] { border-color: var(--teal); background: var(--sub); color: var(--teal); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+  .legend button { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 1px solid var(--border); background: transparent; color: var(--soft); font: inherit; font-size: 13px; cursor: pointer; }
+  .legend button[aria-pressed="false"] { color: var(--grey); text-decoration: line-through; }
+  .legend button[aria-pressed="false"] .key { opacity: .3; }
+  .key { display: inline-block; flex: none; width: 14px; height: 2px; border-radius: 1px; }
+  .plot-wrap { position: relative; }
+  .plot svg { display: block; width: 100%; overflow: visible; }
+  .plot svg:focus-visible { outline-offset: 4px; }
+  .chart-tip { position: absolute; z-index: 2; min-width: 170px; padding: 8px 10px; background: var(--sub); border: 1px solid var(--border2); font-size: 13px; pointer-events: none; }
+  .chart-tip[hidden] { display: none; }
+  .tip-date { margin-bottom: 4px; font-size: 12px; color: var(--grey); }
+  .tip-row { display: flex; align-items: center; gap: 8px; line-height: 1.6; }
+  .tip-row strong { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tip-row .name { color: var(--soft); }
+  .chart-caption { margin: 0; font-size: 13px; color: var(--grey); }
+  .data-table summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--teal); }
+  .table-scroll { max-height: 340px; margin-top: 10px; overflow: auto; border: 1px solid var(--border); }
+  .stats-section { min-width: 0; }
+  .stats-section > * { min-width: 0; max-width: 100%; }
+  .stats-table-card { overflow-x: auto; background: var(--card); }
+  .stats-section table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .stats-section th, .stats-section td { padding: 9px 14px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .stats-section th:first-child, .stats-section td:first-child { text-align: left; }
+  .stats-section thead th { position: sticky; top: 0; background: var(--card); color: var(--soft); font-size: 13px; font-weight: 600; }
+  .stats-section tbody tr:last-child td { border-bottom: 0; }
+  .stats-section td .repo { display: block; font-size: 12px; }
+  .stats-section .na { color: var(--grey); }
 
   .site-footer { margin-top: 32px; border-top: 1px solid var(--border); }
   .site-footer .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 32px; padding-top: 40px; padding-bottom: 48px; }
@@ -132,6 +174,7 @@
   <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></g></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M8 7h9v9"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></symbol>
   <symbol id="i-scale" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M7 21h10M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/><path d="M2 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/><path d="M16 16l3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z"/></g></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
@@ -147,6 +190,9 @@
       <nav class="nav" aria-label="Main">
         <a href="#projects">Projects</a>
         <a href="#documentation">Documentation</a>
+        {%- if star_total or download_total %}
+        <a href="#statistics">Statistics</a>
+        {%- endif %}
         <a href="https://nx-ai.github.io/linktree/">Publications</a>
         <a href="https://github.com/NX-AI">GitHub</a>
         <a href="https://huggingface.co/NX-AI">Hugging Face</a>
@@ -210,8 +256,15 @@
               <h4>{{ p.name }}</h4>
               <span class="repo">{{ p.repo }}</span>
             </div>
-            {%- if p.stars %}
-            <span class="stars"><svg class="icon" aria-hidden="true"><use href="#i-star"/></svg>{{ p.stars }}<span class="sr-only"> GitHub stars</span></span>
+            {%- if p.stars or p.downloads %}
+            <div class="stats">
+              {%- if p.stars %}
+              <span class="stars"><svg class="icon" aria-hidden="true"><use href="#i-star"/></svg>{{ p.stars }}<span class="sr-only"> GitHub stars</span></span>
+              {%- endif %}
+              {%- if p.downloads %}
+              <span class="stars" title="PyPI downloads, all time"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>{{ p.downloads }}<span class="sr-only"> PyPI downloads, all time</span></span>
+              {%- endif %}
+            </div>
             {%- endif %}
           </div>
           <p class="desc">{{ p.description }}</p>
@@ -233,6 +286,66 @@
     </div>
     {%- endfor %}
   </section>
+
+  {%- if star_total or download_total %}
+  <section id="statistics" class="stats-section" aria-labelledby="stats-title">
+    <div class="section-head">
+      <div class="tag">USAGE</div>
+      <h2 id="stats-title">Statistics</h2>
+    </div>
+    <div class="stat-tiles">
+      {%- if star_total %}
+      <div class="tile"><span class="tile-value">{{ star_total }}</span><span class="tile-label">GitHub stars across {{ total }} repositories</span></div>
+      {%- endif %}
+      {%- if download_total %}
+      <div class="tile"><span class="tile-value">{{ download_total }}</span><span class="tile-label">PyPI downloads, all time</span></div>
+      <div class="tile"><span class="tile-value">{{ download_recent }}</span><span class="tile-label">PyPI downloads in the last 30 days</span></div>
+      {%- endif %}
+    </div>
+
+    {%- if has_charts %}
+    <div class="chart-panel" hidden>
+      <div class="chart-top">
+        <h3 class="chart-title"></h3>
+        <div class="seg" role="group" aria-label="Chart">
+          <button type="button" data-chart="stars" aria-pressed="false">GitHub stars</button>
+          <button type="button" data-chart="downloads" aria-pressed="false">PyPI downloads</button>
+        </div>
+      </div>
+      <div class="legend" role="group" aria-label="Show or hide series"></div>
+      <div class="plot-wrap">
+        <div class="plot"></div>
+        <div class="chart-tip" hidden></div>
+      </div>
+      <p class="chart-caption"></p>
+      <details class="data-table">
+        <summary>Show chart data as a table</summary>
+        <div class="table-scroll"><table><thead></thead><tbody></tbody></table></div>
+      </details>
+    </div>
+    <script type="application/json" id="chart-data">{{ chart_json | safe }}</script>
+    {%- endif %}
+
+    <div class="stats-table-card">
+      <table>
+        <caption class="sr-only">Stars and downloads per project</caption>
+        <thead>
+          <tr><th scope="col">Project</th><th scope="col">GitHub stars</th><th scope="col">PyPI downloads, all time</th><th scope="col">PyPI downloads, last 30 days</th></tr>
+        </thead>
+        <tbody>
+          {%- for p in stat_rows %}
+          <tr>
+            <td>{{ p.name }}<span class="repo">{{ p.repo }}</span></td>
+            <td>{{ p.stars or "0" }}</td>
+            <td>{% if p.downloads %}{{ p.downloads }}{% else %}<span class="na">not on PyPI</span>{% endif %}</td>
+            <td>{% if p.downloads %}{{ p.downloads_recent or "0" }}{% else %}<span class="na">–</span>{% endif %}</td>
+          </tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {%- endif %}
 </main>
 
 <footer class="site-footer">
@@ -284,6 +397,269 @@
         groups.forEach(function (g) { g.hidden = !(f === "all" || g.dataset.group === f); });
       });
     });
+  })();
+
+  (function () {
+    var dataEl = document.getElementById("chart-data");
+    var panel = document.querySelector(".chart-panel");
+    if (!dataEl || !panel) return;
+    var charts = JSON.parse(dataEl.textContent);
+    var META = {
+      stars: { title: "GitHub stars over time", what: "stars", date: "Week of ",
+               caption: "Cumulative stars per repository at the end of each week. Repositories outside the top five are summed as Other." },
+      downloads: { title: "PyPI downloads per week", what: "downloads", date: "Week of ",
+                   caption: "Downloads per package for each complete week (Monday to Sunday). The current week is left out until it is complete." }
+    };
+    var NS = "http://www.w3.org/2000/svg";
+    var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var tabs = panel.querySelectorAll("[data-chart]");
+    var titleEl = panel.querySelector(".chart-title");
+    var legend = panel.querySelector(".legend");
+    var plot = panel.querySelector(".plot");
+    var tip = panel.querySelector(".chart-tip");
+    var caption = panel.querySelector(".chart-caption");
+    var thead = panel.querySelector("thead");
+    var tbody = panel.querySelector("tbody");
+    var current = null, hidden = {}, active = null, geo = null;
+
+    function color(s) { return "var(--s" + (s.color === "other" ? "-other" : s.color) + ")"; }
+    function full(n) { return n.toLocaleString("en-US"); }
+    function compact(n) {
+      if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
+      if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, "") + "k";
+      return String(n);
+    }
+    function parse(iso) { var p = iso.split("-"); return { y: +p[0], m: +p[1] - 1, d: +p[2] }; }
+    function longDate(iso) { var d = parse(iso); return d.d + " " + MONTHS[d.m] + " " + d.y; }
+    function svg(name, attrs, parent) {
+      var e = document.createElementNS(NS, name);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      if (parent) parent.appendChild(e);
+      return e;
+    }
+    function niceStep(max) {
+      var raw = max / 4, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+      return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+    }
+    function visible() { return charts[current].series.filter(function (s) { return !hidden[current + s.key]; }); }
+
+    function buildLegend() {
+      legend.textContent = "";
+      charts[current].series.forEach(function (s) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("aria-pressed", String(!hidden[current + s.key]));
+        var k = document.createElement("span");
+        k.className = "key";
+        k.style.background = color(s);
+        b.appendChild(k);
+        b.appendChild(document.createTextNode(s.name));
+        b.addEventListener("click", function () {
+          hidden[current + s.key] = !hidden[current + s.key];
+          b.setAttribute("aria-pressed", String(!hidden[current + s.key]));
+          draw();
+        });
+        legend.appendChild(b);
+      });
+    }
+
+    function buildTable() {
+      var c = charts[current];
+      thead.textContent = "";
+      tbody.textContent = "";
+      var hr = document.createElement("tr");
+      ["Week starting"].concat(c.series.map(function (s) { return s.name; })).forEach(function (h) {
+        var th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = h;
+        hr.appendChild(th);
+      });
+      thead.appendChild(hr);
+      for (var i = c.weeks.length - 1; i >= 0; i--) {
+        var tr = document.createElement("tr");
+        var td = document.createElement("td");
+        td.textContent = longDate(c.weeks[i]);
+        tr.appendChild(td);
+        c.series.forEach(function (s) {
+          var cell = document.createElement("td");
+          cell.textContent = s.values[i] == null ? "–" : full(s.values[i]);
+          tr.appendChild(cell);
+        });
+        tbody.appendChild(tr);
+      }
+    }
+
+    function draw() {
+      var c = charts[current], series = visible();
+      var width = Math.max(plot.clientWidth, 280);
+      var narrow = width < 560;
+      var labelled = series.length > 0 && series.length <= 4;
+      var m = { t: 12, r: labelled ? (narrow ? 96 : 140) : 12, b: 28, l: 48 };
+      var height = narrow ? 260 : 320;
+      var w = width - m.l - m.r, h = height - m.t - m.b, n = c.weeks.length;
+      var max = 0;
+      series.forEach(function (s) { s.values.forEach(function (v) { if (v != null && v > max) max = v; }); });
+      var step = max > 0 ? niceStep(max) : 1, top = max > 0 ? Math.ceil(max / step) * step : 4;
+      function x(i) { return m.l + (n > 1 ? (i / (n - 1)) * w : w / 2); }
+      function y(v) { return m.t + h - (v / top) * h; }
+      geo = { x: x, y: y, m: m, w: w, h: h, n: n, series: series };
+
+      plot.textContent = "";
+      var root = svg("svg", { width: width, height: height, viewBox: "0 0 " + width + " " + height, tabindex: "0",
+                              role: "img", "aria-label": META[current].title + ". Use the arrow keys to read values, or open the data table below." }, plot);
+      var grid = svg("g", {}, root);
+      for (var v = 0; v <= top + 1e-9; v += step) {
+        svg("line", { x1: m.l, x2: m.l + w, y1: y(v), y2: y(v), stroke: v === 0 ? "var(--border2)" : "var(--border)", "stroke-width": 1 }, grid);
+        var tl = svg("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--grey)", style: "font-variant-numeric: tabular-nums" }, grid);
+        tl.textContent = compact(v);
+      }
+      // Month ticks, thinned to fit the width.
+      var span = n / 4.35, every = [1, 2, 3, 6, 12].filter(function (k) { return span / k <= w / 70; })[0] || 12;
+      var lastM = -1;
+      c.weeks.forEach(function (iso, i) {
+        var d = parse(iso), key = d.y * 12 + d.m;
+        if (key === lastM) return;
+        lastM = key;
+        if (i === 0 || d.m % every !== 0) return;
+        var t = svg("text", { x: x(i), y: m.t + h + 18, "text-anchor": "middle", "font-size": 12, fill: "var(--grey)" }, grid);
+        t.textContent = d.m === 0 || every === 12 ? String(d.y) : MONTHS[d.m];
+      });
+
+      var lines = svg("g", {}, root);
+      series.forEach(function (s) {
+        var dpath = "", pen = false;
+        s.values.forEach(function (v, i) {
+          if (v == null) { pen = false; return; }
+          dpath += (pen ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1);
+          pen = true;
+        });
+        svg("path", { d: dpath, fill: "none", stroke: color(s), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }, lines);
+      });
+
+      if (labelled) {
+        var labels = series.map(function (s) {
+          var last = s.values.length - 1;
+          while (last >= 0 && s.values[last] == null) last--;
+          return { s: s, y: last >= 0 ? y(s.values[last]) : m.t + h };
+        }).sort(function (a, b) { return a.y - b.y; });
+        for (var k = 1; k < labels.length; k++) labels[k].y = Math.max(labels[k].y, labels[k - 1].y + 16);
+        var over = labels.length ? labels[labels.length - 1].y - (m.t + h) : 0;
+        if (over > 0) labels.forEach(function (l) { l.y -= over; });
+        labels.forEach(function (l) {
+          svg("line", { x1: m.l + w + 8, x2: m.l + w + 18, y1: l.y, y2: l.y, stroke: color(l.s), "stroke-width": 2, "stroke-linecap": "round" }, root);
+          var t = svg("text", { x: m.l + w + 24, y: l.y + 4, "font-size": 12, fill: "var(--soft)" }, root);
+          t.textContent = l.s.name.length > 18 && narrow ? l.s.name.slice(0, 11) + "…" : l.s.name;
+        });
+      }
+
+      var hover = svg("g", { visibility: "hidden" }, root);
+      geo.cross = svg("line", { y1: m.t, y2: m.t + h, stroke: "var(--grey)", "stroke-width": 1 }, hover);
+      geo.dots = series.map(function (s) { return svg("circle", { r: 4, fill: color(s), stroke: "var(--card)", "stroke-width": 2 }, hover); });
+      geo.hover = hover;
+      var hit = svg("rect", { x: m.l, y: 0, width: w, height: m.t + h, fill: "transparent" }, root);
+      hit.addEventListener("pointermove", function (e) {
+        var r = root.getBoundingClientRect();
+        show(Math.round(((e.clientX - r.left - m.l) / w) * (n - 1)));
+      });
+      hit.addEventListener("pointerleave", hide);
+      root.addEventListener("focus", function () { show(active == null ? n - 1 : active); });
+      root.addEventListener("blur", hide);
+      root.addEventListener("keydown", function (e) {
+        var i = active == null ? n - 1 : active;
+        if (e.key === "ArrowLeft") i -= 1;
+        else if (e.key === "ArrowRight") i += 1;
+        else if (e.key === "Home") i = 0;
+        else if (e.key === "End") i = n - 1;
+        else return;
+        e.preventDefault();
+        show(i);
+      });
+      if (active != null) show(active);
+    }
+
+    function show(i) {
+      var g = geo, c = charts[current];
+      i = Math.max(0, Math.min(g.n - 1, i));
+      active = i;
+      g.hover.setAttribute("visibility", "visible");
+      g.cross.setAttribute("x1", g.x(i));
+      g.cross.setAttribute("x2", g.x(i));
+      var rows = [];
+      g.series.forEach(function (s, k) {
+        var v = s.values[i];
+        g.dots[k].setAttribute("visibility", v == null ? "hidden" : "visible");
+        if (v == null) return;
+        g.dots[k].setAttribute("cx", g.x(i));
+        g.dots[k].setAttribute("cy", g.y(v));
+        rows.push({ s: s, v: v });
+      });
+      rows.sort(function (a, b) { return b.v - a.v; });
+      tip.textContent = "";
+      var head = document.createElement("div");
+      head.className = "tip-date";
+      head.textContent = META[current].date + longDate(c.weeks[i]);
+      tip.appendChild(head);
+      if (!rows.length) {
+        var none = document.createElement("div");
+        none.className = "tip-row";
+        none.textContent = "No data";
+        tip.appendChild(none);
+      }
+      rows.forEach(function (r) {
+        var row = document.createElement("div");
+        row.className = "tip-row";
+        var key = document.createElement("span");
+        key.className = "key";
+        key.style.background = color(r.s);
+        var val = document.createElement("strong");
+        val.textContent = full(r.v);
+        var name = document.createElement("span");
+        name.className = "name";
+        name.textContent = r.s.name;
+        row.appendChild(key);
+        row.appendChild(val);
+        row.appendChild(name);
+        tip.appendChild(row);
+      });
+      tip.hidden = false;
+      var px = g.x(i), pw = plot.clientWidth, tw = tip.offsetWidth;
+      var left = px + 14 + tw > pw ? px - 14 - tw : px + 14;
+      tip.style.left = Math.max(0, left) + "px";
+      tip.style.top = g.m.t + "px";
+    }
+
+    function hide() {
+      active = null;
+      tip.hidden = true;
+      if (geo) geo.hover.setAttribute("visibility", "hidden");
+    }
+
+    function select(name) {
+      current = name;
+      active = null;
+      tip.hidden = true;
+      tabs.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.chart === name)); });
+      titleEl.textContent = META[name].title;
+      caption.textContent = META[name].caption;
+      buildLegend();
+      buildTable();
+      draw();
+    }
+
+    tabs.forEach(function (b) {
+      if (!charts[b.dataset.chart]) { b.remove(); return; }
+      b.addEventListener("click", function () { select(b.dataset.chart); });
+    });
+    tabs = panel.querySelectorAll("[data-chart]");
+    if (!tabs.length) return;
+    panel.hidden = false;
+    select(tabs[0].dataset.chart);
+    if (window.ResizeObserver) {
+      var lastW = plot.clientWidth;
+      new ResizeObserver(function () {
+        if (plot.clientWidth !== lastW) { lastW = plot.clientWidth; draw(); }
+      }).observe(plot);
+    }
   })();
 </script>
 </body>
