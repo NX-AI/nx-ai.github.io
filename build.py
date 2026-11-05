@@ -245,6 +245,7 @@ def main() -> int:
             "id": d["url"],
             "title": d["title"],
             "text": f"Resource type: documentation | Description: {d['description']}",
+            "snippet": d["description"],
             "group": "documentation",
             "url": d["url"],
         }
@@ -267,6 +268,7 @@ def main() -> int:
                 "id": project["repo"],
                 "title": project["name"],
                 "text": " | ".join(labels),
+                "snippet": project["description"],
                 "group": group["id"],
                 "url": f"https://github.com/{project['repo']}",
             })
