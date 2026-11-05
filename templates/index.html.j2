@@ -21,6 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="search/ui.css">
 <style>
   :root, [data-theme="dark"] {
     --bg:#111111; --card:#1A1A1A; --sub:#0D0D0D; --teal:#5BFFE6; --text:#FFFFFF; --soft:#F5F5F5;
@@ -219,6 +220,22 @@
     <div class="tag">PUBLIC REPOSITORIES</div>
     <h1 id="hero-title">Code and models from NXAI</h1>
     <p>Source code, pretrained models and documentation for xLSTM and TiRex, released by NXAI GmbH, Linz, Austria. Each project links to its repository, paper and, where available, documentation and packages.</p>
+    <div class="semantic-search" hidden>
+      <div class="search-box">
+        <label class="sr-only" for="search">Search projects and documentation</label>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="search" type="search" placeholder="Search by words or meaning…" autocomplete="off" aria-describedby="search-status" aria-controls="search-results">
+      </div>
+      <div class="search-settings" id="search-settings">
+        <label class="semantic-toggle"><input id="semantic-toggle" type="checkbox" checked>Semantic search</label>
+        <button class="search-action" id="search-download" type="button" hidden>Download model</button>
+        <span class="search-status" id="search-status" role="status" aria-live="polite"></span>
+      </div>
+      <progress class="search-progress" id="search-progress" aria-label="Text model download" hidden></progress>
+      <p class="search-count" id="search-count" role="status" aria-live="polite"></p>
+      <ol class="search-results" id="search-results" aria-label="Search results" hidden></ol>
+      <p class="search-empty" id="search-empty" hidden></p>
+    </div>
   </section>
 
   <section id="documentation" aria-labelledby="docs-title">
@@ -691,5 +708,7 @@
     }
   })();
 </script>
+<script id="search-entries" type="application/json">{{ search_entries_json | safe }}</script>
+<script type="module" src="search/ui.js"></script>
 </body>
 </html>
