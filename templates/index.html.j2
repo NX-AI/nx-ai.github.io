@@ -170,6 +170,7 @@
     .grid { grid-template-columns: 1fr; }
   }
 </style>
+<link rel="stylesheet" href="demo/style.css?v={{ demo_style_version }}">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -220,6 +221,8 @@
     <h1 id="hero-title">Code and models from NXAI</h1>
     <p>Source code, pretrained models and documentation for xLSTM and TiRex, released by NXAI GmbH, Linz, Austria. Each project links to its repository, paper and, where available, documentation and packages.</p>
   </section>
+
+  {% include "forecast-demo.html.j2" %}
 
   <section id="documentation" aria-labelledby="docs-title">
     <div class="section-head">
@@ -691,5 +694,6 @@
     }
   })();
 </script>
+<script type="module" src="demo/app.mjs?v={{ demo_script_version }}"></script>
 </body>
 </html>

@@ -45,6 +45,7 @@ groups:
           - { type: paper, label: Paper, url: "https://arxiv.org/abs/2607.01204" }
           - { type: huggingface, label: Hugging Face, url: "https://huggingface.co/NX-AI/TiRex-2" }
           - { type: demo, label: Demo, url: "https://huggingface.co/spaces/NX-AI/TiRex-2-demo" }
+          - { type: page, label: Browser demo, url: "https://nx-ai.github.io/#forecast-demo" }
           - { type: pro, label: TiRex-2 PRO, url: "https://nx-ai.github.io/tirex-2/pro/" }
       - name: TiRex
         repo: NX-AI/tirex

@@ -21,8 +21,10 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import hashlib
 import os
 import re
+import shutil
 import sys
 import urllib.error
 import urllib.request
@@ -326,6 +328,8 @@ def main() -> int:
         lstrip_blocks=True,
     )
     html = env.get_template("index.html.j2").render(
+        demo_script_version=hashlib.sha256((ROOT / "demo/app.mjs").read_bytes()).hexdigest()[:12],
+        demo_style_version=hashlib.sha256((ROOT / "demo/style.css").read_bytes()).hexdigest()[:12],
         documentation=data["documentation"],
         groups=data["groups"],
         total=len(projects),
@@ -344,6 +348,7 @@ def main() -> int:
 
     OUT_DIR.mkdir(exist_ok=True)
     (OUT_DIR / "index.html").write_text(html, encoding="utf-8")
+    shutil.copytree(ROOT / "demo", OUT_DIR / "demo", dirs_exist_ok=True)
     print(f"wrote {OUT_DIR / 'index.html'} ({len(projects)} projects)")
     return 0
 
