@@ -27,7 +27,7 @@ function choose() {
     const last = selected.start + (selected.values.length - 1) * step();
     const age = Math.max(0, (Date.now() / 1000 - last - step()) / 3600);
     const missing = selected.values.filter(v => v === null).length;
-    $('data-note').textContent = `Updated ${date(Date.parse(data.fetched_at) / 1000)}. Forecast starts ${date(last + step())}.${age > 6 ? ' Observations are delayed.' : ''}${missing ? ` ${missing} readings are missing.` : ''}`;
+    $('data-note').textContent = `Updated ${date(Date.parse(data.fetched_at) / 1000)}. Forecast starts ${date(last + step())}.${age > 6 ? ' Observations are delayed.' : ''}${missing ? ` ${missing} readings are missing.` : ''}${data.series.some(s => s.id === 'total_generation') ? '' : ' Total generation is unavailable because its history is incomplete or delayed.'}`;
     $('chart-title').textContent = `${selected.name}${selected.id === 'total_generation' ? '' : ' generation'} · ${countryName(country)}`;
     $('empty').hidden = true;
     status(hasModel ? 'Ready. Adjust the forecast horizon or run a new forecast.' : 'Ready. Load the model to forecast on your device. First download: approximately 407 MB.');
@@ -61,6 +61,7 @@ async function refresh(nextCountry = country) {
     $('series').replaceChildren(...data.series.map(s => new Option(s.name, s.id)));
     if (data.series.some(s => s.id === previous)) $('series').value = previous;
     else if (data.series.some(s => s.id === 'total_generation')) $('series').value = 'total_generation';
+    else $('series').value = data.series[0].id;
     loading = false; choose();
     if (hasModel && selected) $('run').click();
   } catch (error) {
@@ -250,15 +251,21 @@ async function initialize() {
     const response = await fetch(new URL('./countries.json', import.meta.url), {cache:'no-store', signal:AbortSignal.timeout(20000)});
     if (!response.ok) throw new Error('Country list unavailable');
     const list = await response.json();
-    if (!Array.isArray(list) || !list.some(c => c.code === 'AT' && c.available) || list.some(c => !/^[A-Z]{2}$/.test(c.code) || !/^(data\.json|data\/[a-z]{2}\.json)$/.test(c.file))) throw new Error('Invalid country list');
+    if (!Array.isArray(list) || !list.some(c => c.code === 'AT') || list.some(c => !/^[A-Z]{2}$/.test(c.code) || !/^(data\.json|data\/[a-z]{2}\.json)$/.test(c.file))) throw new Error('Invalid country list');
     countries = list;
   } catch { /* The bundled Austria snapshot remains usable if the manifest is unavailable. */ }
-  $('country-select').replaceChildren(...countries.sort((a,b)=>countryName(a.code).localeCompare(countryName(b.code))).map(c => {
-    const option = new Option(`${flag(c.code)} ${countryName(c.code)}${c.available ? '' : ' (unavailable)'}`, c.code);
-    option.disabled = !c.available; return option;
-  }));
-  $('country-select').value = country;
-  await refresh();
+  $('country-select').replaceChildren(...countries.filter(c => c.available)
+    .sort((a,b)=>countryName(a.code).localeCompare(countryName(b.code)))
+    .map(c => new Option(`${flag(c.code)} ${countryName(c.code)}`, c.code)));
+  const initialCountry = countries.find(c => c.code === country && c.available)
+    || countries.find(c => c.available);
+  if (!initialCountry) {
+    $('empty').textContent = 'Recent generation data is currently unavailable.';
+    busy(false);
+    return;
+  }
+  $('country-select').value = initialCountry.code;
+  await refresh(initialCountry.code);
 }
 initialize();
 // Update freshness and observations while open, but never interrupt active inference.

@@ -19,11 +19,27 @@ TYPES = {'solar': 'Solar', 'wind_onshore': 'Wind onshore',
 GENERATION_TYPES = ('hydro_run_of_river', 'biomass', 'fossil_gas', 'geothermal',
                     'hydro_water_reservoir', 'hydro_pumped_storage', 'others',
                     'waste', 'wind_onshore', 'solar')
-COUNTRIES = 'at ba be bg ch cy cz de dk ee es fi fr ge gr hr hu ie it lt lu lv md me mk nl no pl pt ro rs se si sk uk xk'.split()
+COUNTRIES = 'at ba be bg ch cy cz de dk ee es fi fr ge gr hr hu ie it lt lu lv md me mk nl no pl pt ro rs se si sk xk'.split()
 GENERATION_TYPES += ('nuclear', 'fossil_brown_coal_lignite', 'fossil_hard_coal',
                      'fossil_oil', 'fossil_oil_shale', 'fossil_peat',
                      'fossil_coal_derived_gas', 'wind_offshore', 'other_renewable',
-                     'marine')
+                     'marine', 'other_renewables', 'battery')
+
+
+def filter_usable_series(snapshot, now):
+    """Require recent, mostly complete history; never turn unknown readings into zero."""
+    step = snapshot['step_seconds']
+    window = 14 * 86400 // step
+    usable = []
+    for series in snapshot['series']:
+        values = series['values'][-window:]
+        end = series['start'] + len(series['values']) * step
+        minimum = window if series['id'] == 'total_generation' else 86400 // step
+        if (len(values) >= minimum
+                and now.timestamp() - end <= 86400
+                and sum(map(is_number, values)) / len(values) >= 0.95):
+            usable.append(series)
+    return {**snapshot, 'series': usable}
 
 
 def is_number(value):
@@ -82,7 +98,7 @@ def normalize(payload, now, country='at'):
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix('.tmp')
-    temporary.write_text(json.dumps(value, separators=(',', ':'), allow_nan=False) + '\n')
+    temporary.write_text(json.dumps(value, indent=2, allow_nan=False) + '\n')
     temporary.replace(path)
 
 
@@ -116,13 +132,21 @@ def main():
         try:
             request = urllib.request.Request(SOURCE + '?' + query,
                 headers={'User-Agent': 'NXAI-TiRex2-browser-demo/1.0'})
-            result = normalize(download(request), now, country)
+            result = filter_usable_series(normalize(download(request), now, country), now)
             write_json(path, result)
             print(f'Updated {country}: {len(result["series"])} series', flush=True)
         except Exception as error:
             print(f'::warning::{country}: refresh failed ({error}); retaining any dated snapshot.', file=sys.stderr)
+        available = False
+        if path.exists():
+            # Failed refreshes must not keep stale or unreliable options selectable.
+            saved = json.loads(path.read_text())
+            if saved.get('version') == 1:
+                saved = filter_usable_series(saved, now)
+                write_json(path, saved)
+                available = bool(saved['series'])
         countries.append({'code': country.upper(), 'file': str(path.relative_to(args.output.parent)),
-                          'available': path.exists()})
+                          'available': available})
     write_json(args.output.parent / 'countries.json', countries)
     return 0 if any(c['available'] for c in countries) else 1
 

@@ -1,1 +1,177 @@
-[{"code":"AT","file":"data.json","available":true},{"code":"BA","file":"data/ba.json","available":true},{"code":"BE","file":"data/be.json","available":true},{"code":"BG","file":"data/bg.json","available":true},{"code":"CH","file":"data/ch.json","available":true},{"code":"CY","file":"data/cy.json","available":true},{"code":"CZ","file":"data/cz.json","available":true},{"code":"DE","file":"data/de.json","available":true},{"code":"DK","file":"data/dk.json","available":true},{"code":"EE","file":"data/ee.json","available":true},{"code":"ES","file":"data/es.json","available":true},{"code":"FI","file":"data/fi.json","available":true},{"code":"FR","file":"data/fr.json","available":true},{"code":"GE","file":"data/ge.json","available":true},{"code":"GR","file":"data/gr.json","available":true},{"code":"HR","file":"data/hr.json","available":true},{"code":"HU","file":"data/hu.json","available":true},{"code":"IE","file":"data/ie.json","available":true},{"code":"IT","file":"data/it.json","available":true},{"code":"LT","file":"data/lt.json","available":true},{"code":"LU","file":"data/lu.json","available":true},{"code":"LV","file":"data/lv.json","available":true},{"code":"MD","file":"data/md.json","available":true},{"code":"ME","file":"data/me.json","available":true},{"code":"MK","file":"data/mk.json","available":true},{"code":"NL","file":"data/nl.json","available":true},{"code":"NO","file":"data/no.json","available":true},{"code":"PL","file":"data/pl.json","available":true},{"code":"PT","file":"data/pt.json","available":true},{"code":"RO","file":"data/ro.json","available":true},{"code":"RS","file":"data/rs.json","available":true},{"code":"SE","file":"data/se.json","available":true},{"code":"SI","file":"data/si.json","available":true},{"code":"SK","file":"data/sk.json","available":true},{"code":"UK","file":"data/uk.json","available":true},{"code":"XK","file":"data/xk.json","available":true}]
+[
+  {
+    "code": "AT",
+    "file": "data.json",
+    "available": true
+  },
+  {
+    "code": "BA",
+    "file": "data/ba.json",
+    "available": true
+  },
+  {
+    "code": "BE",
+    "file": "data/be.json",
+    "available": true
+  },
+  {
+    "code": "BG",
+    "file": "data/bg.json",
+    "available": true
+  },
+  {
+    "code": "CH",
+    "file": "data/ch.json",
+    "available": true
+  },
+  {
+    "code": "CY",
+    "file": "data/cy.json",
+    "available": true
+  },
+  {
+    "code": "CZ",
+    "file": "data/cz.json",
+    "available": true
+  },
+  {
+    "code": "DE",
+    "file": "data/de.json",
+    "available": true
+  },
+  {
+    "code": "DK",
+    "file": "data/dk.json",
+    "available": false
+  },
+  {
+    "code": "EE",
+    "file": "data/ee.json",
+    "available": true
+  },
+  {
+    "code": "ES",
+    "file": "data/es.json",
+    "available": true
+  },
+  {
+    "code": "FI",
+    "file": "data/fi.json",
+    "available": true
+  },
+  {
+    "code": "FR",
+    "file": "data/fr.json",
+    "available": true
+  },
+  {
+    "code": "GE",
+    "file": "data/ge.json",
+    "available": true
+  },
+  {
+    "code": "GR",
+    "file": "data/gr.json",
+    "available": true
+  },
+  {
+    "code": "HR",
+    "file": "data/hr.json",
+    "available": true
+  },
+  {
+    "code": "HU",
+    "file": "data/hu.json",
+    "available": true
+  },
+  {
+    "code": "IE",
+    "file": "data/ie.json",
+    "available": true
+  },
+  {
+    "code": "IT",
+    "file": "data/it.json",
+    "available": true
+  },
+  {
+    "code": "LT",
+    "file": "data/lt.json",
+    "available": true
+  },
+  {
+    "code": "LU",
+    "file": "data/lu.json",
+    "available": true
+  },
+  {
+    "code": "LV",
+    "file": "data/lv.json",
+    "available": true
+  },
+  {
+    "code": "MD",
+    "file": "data/md.json",
+    "available": true
+  },
+  {
+    "code": "ME",
+    "file": "data/me.json",
+    "available": false
+  },
+  {
+    "code": "MK",
+    "file": "data/mk.json",
+    "available": false
+  },
+  {
+    "code": "NL",
+    "file": "data/nl.json",
+    "available": true
+  },
+  {
+    "code": "NO",
+    "file": "data/no.json",
+    "available": true
+  },
+  {
+    "code": "PL",
+    "file": "data/pl.json",
+    "available": true
+  },
+  {
+    "code": "PT",
+    "file": "data/pt.json",
+    "available": true
+  },
+  {
+    "code": "RO",
+    "file": "data/ro.json",
+    "available": true
+  },
+  {
+    "code": "RS",
+    "file": "data/rs.json",
+    "available": true
+  },
+  {
+    "code": "SE",
+    "file": "data/se.json",
+    "available": true
+  },
+  {
+    "code": "SI",
+    "file": "data/si.json",
+    "available": true
+  },
+  {
+    "code": "SK",
+    "file": "data/sk.json",
+    "available": true
+  },
+  {
+    "code": "XK",
+    "file": "data/xk.json",
+    "available": true
+  }
+]

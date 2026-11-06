@@ -46,17 +46,57 @@ class GenerationTests(unittest.TestCase):
     def test_refresh_isolates_country_failures_and_preserves_snapshot(self):
         payload = self.payload()
         payload['country'] = 'de'
+        start = dt.datetime.now(dt.timezone.utc).replace(minute=0, second=0, microsecond=0) - dt.timedelta(days=3)
+        for i, row in enumerate(payload['data']):
+            row['timestamp'] = (start + dt.timedelta(minutes=15*i)).isoformat()
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / 'data.json'
-            output.write_text('{"dated":"snapshot"}')
+            saved = normalize(payload, dt.datetime.now(dt.timezone.utc), 'de')
+            saved['country'] = 'AT'
+            output.write_text(json.dumps(saved))
+            stale = {**saved, 'country': 'FR', 'series': [dict(s, start=s['start'] - 3 * 86400) for s in saved['series']]}
+            (Path(directory) / 'data').mkdir()
+            (Path(directory) / 'data/fr.json').write_text(json.dumps(stale))
             with patch('sys.argv', ['fetch_generation', '--output', str(output)]), \
                  patch.object(fetch_generation, 'COUNTRIES', ['at', 'de', 'fr']), \
                  patch.object(fetch_generation, 'download', side_effect=[OSError('offline'), payload, OSError('offline')]):
                 self.assertEqual(fetch_generation.main(), 0)
-            self.assertEqual(json.loads(output.read_text()), {'dated': 'snapshot'})
+            self.assertEqual(json.loads(output.read_text())['fetched_at'], saved['fetched_at'])
+            self.assertTrue(json.loads(output.read_text())['series'])
+            self.assertEqual(json.loads((Path(directory) / 'data/fr.json').read_text())['series'], [])
             self.assertEqual(json.loads((Path(directory) / 'data/de.json').read_text())['country'], 'DE')
             manifest = json.loads((Path(directory) / 'countries.json').read_text())
             self.assertEqual([c['available'] for c in manifest], [True, True, False])
+
+    def test_quality_filter_requires_complete_recent_total_history(self):
+        now = dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc)
+        step = 900
+        def series(key, count=1344, missing=0, lag=0):
+            return {'id': key, 'name': key,
+                    'start': int(now.timestamp()) - (count + lag) * step,
+                    'values': [None] * missing + [0.0] * (count - missing)}
+        def kept(*items):
+            snapshot = {'step_seconds': step, 'series': list(items)}
+            return fetch_generation.filter_usable_series(snapshot, now)['series']
+        healthy = series('total_generation', missing=20)
+        self.assertEqual(kept(healthy), [healthy])
+        self.assertFalse(kept(series('total_generation', missing=516)))
+        self.assertFalse(kept(series('total_generation', count=548)))
+        self.assertFalse(kept(series('total_generation', lag=97)))
+        solar = series('solar', count=200)
+        self.assertEqual(kept(series('total_generation', missing=1247), solar), [solar])
+        self.assertFalse(kept(series('solar', missing=516)))
+        self.assertFalse(kept(series('solar', lag=97)))
+
+    def test_total_includes_other_renewables_and_battery_discharge(self):
+        p = self.payload()
+        for row in p['data']:
+            row['values'] = {'solar': 10, 'other_renewables': 20, 'battery': 30,
+                             'battery_consumption': -40, 'load': 1000}
+        result = normalize(p, dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc))
+        self.assertEqual(result['series'][0]['values'][0], 60)
+        self.assertIn('other_renewables', [s['id'] for s in result['series']])
+        self.assertIn('battery', [s['id'] for s in result['series']])
 
     def payload(self):
         start = dt.datetime(2026, 10, 24, tzinfo=dt.timezone.utc)
