@@ -99,3 +99,25 @@ test('horizon labels adapt from minutes to days',()=>{
   assert.equal(formatDuration(1515),'1 day 1 hour');
   assert.equal(formatDuration(10080),'7 days');
 });
+
+test('quality flags follow the selected context and distinguish real zeros',()=>{
+  const s={start:0,values:[0,0,10,0,20,0],incomplete:[false,true,false,true,false,false]};
+  const selected=selectSeries(s,1/24);
+  assert.deepEqual(selected.values,[10,0,20,0]);
+  assert.deepEqual(selected.incomplete,[false,true,false,false]);
+  assert.equal(selected.start,1800);
+  assert.throws(()=>selectSeries({...s,incomplete:[true]},1/24));
+});
+
+test('missing totals enter the model as NaN while observed zeros stay zero',()=>{
+  const context=makeContext([0,null,17]);
+  assert.equal(context[2045],0);
+  assert(Number.isNaN(context[2046]));
+  assert.equal(context[2047],17);
+});
+
+test('missing component names follow the context window',()=>{
+  const series={start:0,values:[10,0,null,8,9],missing_components:[[],['Solar'],['Solar','Wind'],[],[]]};
+  assert.deepEqual(selectSeries(series,1/24).missing_components,[['Solar'],['Solar','Wind'],[],[]]);
+  assert.throws(()=>selectSeries({...series,missing_components:[[]]},1/24));
+});

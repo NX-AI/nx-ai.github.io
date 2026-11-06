@@ -8,7 +8,7 @@ from scripts import fetch_generation
 from scripts.fetch_generation import normalize, GENERATION_TYPES
 
 class GenerationTests(unittest.TestCase):
-    def test_total_excludes_non_generation_and_requires_all_components(self):
+    def test_total_excludes_non_generation_and_flags_missing_components(self):
         p = self.payload()
         for row in p['data']:
             row['values'] = {key: 10.0 for key in GENERATION_TYPES}
@@ -21,7 +21,11 @@ class GenerationTests(unittest.TestCase):
         total = result['series'][0]
         self.assertEqual(total['id'], 'total_generation')
         self.assertEqual(total['values'][0], 10 * len(GENERATION_TYPES))
-        self.assertIsNone(total['values'][40])
+        self.assertEqual(total['values'][40], 10 * (len(GENERATION_TYPES) - 1))
+        self.assertTrue(total['incomplete'][40])
+        self.assertEqual(total['missing_components'][40], ['Biomass'])
+        self.assertEqual(total['missing_components'][41], [])
+        self.assertFalse(total['incomplete'][41])
         self.assertEqual(total['values'][41], 10 * (len(GENERATION_TYPES) - 1))
 
     def test_country_specific_total_and_hourly_grid(self):
@@ -39,7 +43,8 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(result['country'], 'FR')
         self.assertEqual(result['step_seconds'], 3600)
         self.assertEqual(result['series'][0]['values'][0], 110)
-        self.assertIsNone(result['series'][0]['values'][40])
+        self.assertEqual(result['series'][0]['values'][40], 10)
+        self.assertTrue(result['series'][0]['incomplete'][40])
         with self.assertRaises(ValueError):
             normalize(p, dt.datetime.now(dt.timezone.utc), 'de')
 
@@ -68,23 +73,24 @@ class GenerationTests(unittest.TestCase):
             manifest = json.loads((Path(directory) / 'countries.json').read_text())
             self.assertEqual([c['available'] for c in manifest], [True, True, False])
 
-    def test_quality_filter_requires_complete_recent_total_history(self):
+    def test_quality_filter_keeps_flagged_totals_and_checks_individual_sources(self):
         now = dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc)
         step = 900
         def series(key, count=1344, missing=0, lag=0):
             return {'id': key, 'name': key,
                     'start': int(now.timestamp()) - (count + lag) * step,
-                    'values': [None] * missing + [0.0] * (count - missing)}
+                    'values': ([0.0] * count if key == 'total_generation' else [None] * missing + [0.0] * (count - missing)),
+                    'incomplete': [True] * missing + [False] * (count - missing)}
         def kept(*items):
             snapshot = {'step_seconds': step, 'series': list(items)}
             return fetch_generation.filter_usable_series(snapshot, now)['series']
         healthy = series('total_generation', missing=20)
         self.assertEqual(kept(healthy), [healthy])
-        self.assertFalse(kept(series('total_generation', missing=516)))
-        self.assertFalse(kept(series('total_generation', count=548)))
+        self.assertTrue(kept(series('total_generation', missing=516)))
+        self.assertTrue(kept(series('total_generation', count=548)))
         self.assertFalse(kept(series('total_generation', lag=97)))
         solar = series('solar', count=200)
-        self.assertEqual(kept(series('total_generation', missing=1247), solar), [solar])
+        self.assertEqual(len(kept(series('total_generation', missing=1247), solar)), 2)
         self.assertFalse(kept(series('solar', missing=516)))
         self.assertFalse(kept(series('solar', lag=97)))
 
@@ -112,6 +118,29 @@ class GenerationTests(unittest.TestCase):
         self.assertEqual(len(s['values']), 200)
         self.assertEqual(s['values'][0], 0)
         self.assertIsNone(s['values'][40])
+        self.assertTrue(s['incomplete'][40])
+        self.assertEqual(s['missing_components'][40], ['Solar'])
+        self.assertFalse(s['incomplete'][0])
+        self.assertIsNone(result['series'][1]['values'][40])
+
+    def test_all_missing_total_is_missing_and_trailing_gaps_are_trimmed(self):
+        p = self.payload()
+        p['data'][50]['values']['solar'] = None
+        p['data'][-1]['values']['solar'] = None
+        total = normalize(p, dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc))['series'][0]
+        self.assertIsNone(total['values'][50])
+        self.assertTrue(total['incomplete'][50])
+        self.assertEqual(total['values'][-1], 198)
+        self.assertFalse(total['incomplete'][-1])
+        self.assertEqual(len(total['values']), 199)
+
+    def test_known_zero_with_missing_component_remains_zero(self):
+        p = self.payload()
+        for row in p['data']:
+            row['values'] = {'solar': 0, 'wind_onshore': None}
+        total = normalize(p, dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc))['series'][0]
+        self.assertEqual(total['values'][50], 0)
+        self.assertTrue(total['incomplete'][50])
 
     def test_only_completed_intervals(self):
         p = self.payload()

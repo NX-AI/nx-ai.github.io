@@ -122,7 +122,7 @@
   {
     "code": "MK",
     "file": "data/mk.json",
-    "available": false
+    "available": true
   },
   {
     "code": "NL",
