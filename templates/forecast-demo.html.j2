@@ -1,15 +1,15 @@
 <section id="forecast-demo" aria-labelledby="forecast-title">
   <div class="section-head">
     <div class="tag">TRY TiRex-2</div>
-    <h2 id="forecast-title">Forecast electricity generation in <span class="demo-country-picker"><button id="demo-country" aria-expanded="false" aria-controls="demo-country-menu" disabled>🇦🇹Austria</button><span id="demo-country-menu" hidden><label for="demo-country-select">Choose a country</label><select id="demo-country-select" size="8" aria-label="Country"></select></span></span></h2>
-    <p class="demo-intro">Real-time generation data, forecast locally in your browser. First run downloads a 407 MB model.</p>
+    <h2 id="forecast-title">Forecast electricity generation in <span class="demo-country-picker"><button id="demo-country" data-tooltip="Choose a country" aria-expanded="false" aria-controls="demo-country-menu" disabled>🇦🇹Austria</button><span id="demo-country-menu" hidden><label for="demo-country-select">Choose a country</label><select id="demo-country-select" size="8" aria-label="Country"></select></span></span></h2>
+    <p class="demo-intro">Real-time data, forecast locally in your browser via <a href="https://nx-ai.github.io/tirex-2/how-to/onnx/" data-tooltip="Run TiRex-2 everywhere." target="_blank" rel="noopener noreferrer" aria-label="TiRex-2 ONNX (opens in a new tab)">TiRex-2 ONNX <span aria-hidden="true">↗</span></a>.</p>
   </div>
   <div class="demo-panel">
     <div class="demo-controls">
       <label>Generation<select id="demo-series" disabled><option>Loading…</option></select></label>
-      <label class="demo-horizon-label" for="demo-context">Context · <output id="demo-context-value" for="demo-context">7 days</output><input id="demo-context" type="range" min="1" max="504" step="1" value="168" aria-label="Context length" aria-valuetext="7 days"></label>
-      <label class="demo-horizon-label" for="demo-horizon">Forecast · <output id="demo-horizon-value" for="demo-horizon">1 day</output><input id="demo-horizon" type="range" min="1" max="672" step="1" value="96" aria-label="Forecast horizon" aria-valuetext="1 day"></label>
-      <button class="demo-primary" id="demo-run" disabled>Load model & forecast ↗</button>
+      <label class="demo-horizon-label" for="demo-context">Context · <output id="demo-context-value" for="demo-context">14 days</output><input id="demo-context" type="range" min="1" max="504" step="1" value="336" aria-label="Context length" aria-valuetext="14 days"></label>
+      <label class="demo-horizon-label" for="demo-horizon">Forecast · <output id="demo-horizon-value" for="demo-horizon">3 days</output><input id="demo-horizon" type="range" min="1" max="672" step="1" value="288" aria-label="Forecast horizon" aria-valuetext="3 days"></label>
+      <button class="demo-primary" id="demo-run" disabled>Forecast</button>
       <button id="demo-cancel" hidden>Cancel</button>
     </div>
     <div id="demo-download-progress" hidden>
@@ -17,12 +17,18 @@
       <progress id="demo-model-progress" max="100" value="0" aria-labelledby="demo-progress-label"></progress>
     </div>
     <div class="demo-chart-heading"><h3 id="demo-chart-title">Austrian generation</h3><div class="demo-legend"><span>Observed</span><span>Median</span><span>10–90% interval</span></div></div>
-    <div class="demo-chart-wrap"><svg id="demo-chart" viewBox="0 0 1100 430" role="img" aria-labelledby="demo-chart-title demo-chart-desc"><desc id="demo-chart-desc">Generation in megawatts and forecast.</desc></svg><div id="demo-tooltip" role="tooltip" hidden><span id="demo-tooltip-time"></span><strong id="demo-tooltip-value"></strong></div><p id="demo-empty">Loading observations…</p></div>
-    <div class="demo-bottom"><p id="demo-status" role="status" aria-live="polite">Loading generation data…</p><div><button id="demo-refresh">Refresh data</button><button id="demo-download" disabled>CSV ↓</button></div></div>
+    <div class="demo-chart-wrap"><svg id="demo-chart" viewBox="0 0 1100 430" role="img" aria-labelledby="demo-chart-title demo-chart-desc"><desc id="demo-chart-desc">Generation in megawatts and forecast.</desc></svg><div id="demo-tooltip" role="tooltip" hidden><span id="demo-tooltip-time"></span><strong id="demo-tooltip-value"></strong></div><p id="demo-empty">Loading observations…</p><div class="demo-chart-actions" role="group" aria-label="Chart actions"><button id="demo-refresh" data-tooltip="Refresh data" aria-label="Refresh data"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></svg></button><button id="demo-download" data-tooltip="Download CSV" aria-label="Download CSV" disabled><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-5-5 5 5 5-5M5 16v5h14v-5"/></svg></button></div></div>
     <details class="demo-notes"><summary>Data & model details</summary>
       <p id="demo-data-note"></p>
       <p>Generation data from <a id="demo-source" href="https://energy-charts.info/charts/power/chart.htm?l=en&c=AT">Energy-Charts / Fraunhofer ISE</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>), refreshed every 30 minutes. Readings may arrive late.</p>
-      <p><a href="https://nx-ai.github.io/tirex-2/how-to/onnx/">TiRex-2 ONNX</a> forecasts in your browser. The shaded range shows uncertainty and may be too narrow for longer forecasts.</p>
+      <p><a href="https://nx-ai.github.io/tirex-2/how-to/onnx/" data-tooltip="Run TiRex-2 everywhere.">TiRex-2 ONNX</a> forecasts in your browser. The shaded range shows uncertainty and may be too narrow for longer forecasts.</p>
     </details>
   </div>
+  <dialog id="demo-model-dialog" aria-labelledby="demo-model-dialog-title" aria-describedby="demo-model-dialog-description">
+    <form method="dialog">
+      <h3 id="demo-model-dialog-title">Download the forecast model?</h3>
+      <p id="demo-model-dialog-description">The first forecast needs a 407 MB download. The model runs in your browser and is saved for future use when possible.</p>
+      <div class="demo-dialog-actions"><button value="cancel" autofocus>Cancel</button><button value="download" class="demo-primary">Download & forecast</button></div>
+    </form>
+  </dialog>
 </section>

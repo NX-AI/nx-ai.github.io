@@ -19,12 +19,12 @@
 #forecast-demo .demo-legend span:nth-child(2):before{background:var(--teal)}
 #forecast-demo .demo-legend span:nth-child(3):before{height:8px;background:var(--shade);border:1px solid var(--teal);margin-bottom:0}
 #forecast-demo .demo-chart-wrap{position:relative}
-#forecast-demo svg{display:block;width:100%;height:230px;overflow:visible}
+#forecast-demo #demo-chart{display:block;width:100%;height:230px;overflow:visible}
 #forecast-demo #demo-empty{position:absolute;inset:30% 0 auto;text-align:center;color:var(--grey);font-size:13px}
-#forecast-demo .demo-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--border);padding-top:10px}
-#forecast-demo .demo-bottom>div{display:flex;gap:8px}
-#forecast-demo #demo-status{margin:0;font-size:12px;color:var(--grey);overflow-wrap:anywhere}
-#forecast-demo #demo-status.error{color:#d78449}
+
+
+
+
 #forecast-demo .demo-notes{font-size:12px;color:var(--grey);margin-top:8px}
 #forecast-demo summary{cursor:pointer;width:fit-content;padding:4px 0}
 #forecast-demo .demo-notes p{margin:8px 0}
@@ -33,7 +33,7 @@
 #forecast-demo progress::-webkit-progress-bar{background:var(--border)}
 #forecast-demo progress::-webkit-progress-value{background:var(--teal)}
 #forecast-demo progress::-moz-progress-bar{background:var(--teal)}
-@media(max-width:600px){#forecast-demo .demo-panel{padding:14px}#forecast-demo .demo-controls{gap:8px}#forecast-demo .demo-controls label:first-child{flex-basis:100%}#forecast-demo .demo-controls label:not(:first-child){flex:1}#forecast-demo .demo-primary{flex-basis:100%}#forecast-demo .demo-bottom{align-items:start;flex-direction:column}#forecast-demo .demo-meta{gap:4px 12px}}
+@media(max-width:600px){#forecast-demo .demo-panel{padding:14px}#forecast-demo .demo-controls{gap:8px}#forecast-demo .demo-controls label:first-child{flex-basis:100%}#forecast-demo .demo-controls label:not(:first-child){flex:1}#forecast-demo .demo-primary{flex-basis:100%}#forecast-demo .demo-meta{gap:4px 12px}}
 #forecast-demo input[type=range]{accent-color:var(--teal);cursor:pointer;min-height:28px;margin:0;touch-action:pan-y}
 #forecast-demo input[type=range]:disabled{cursor:default;opacity:.45}
 #forecast-demo .demo-horizon-label{min-width:170px;display:block}
@@ -46,7 +46,21 @@
 #forecast-demo #demo-tooltip-value{display:block;font-weight:600}
 
 #forecast-demo .demo-country-picker{position:relative;display:inline-block}
-#forecast-demo #demo-country{font:inherit;color:var(--teal);text-decoration:underline;text-underline-offset:.15em;border:0;padding:0;background:transparent;min-height:0;white-space:normal;text-align:left}
+#forecast-demo #demo-country{font:inherit;color:var(--teal);text-decoration:none;border:0;padding:0;background:transparent;min-height:0;white-space:normal;text-align:left}
 #forecast-demo #demo-country-menu{position:absolute;top:100%;left:0;z-index:5;width:280px;max-width:80vw;padding:12px;background:var(--card);border:1px solid var(--border2);box-shadow:0 4px 16px #0002}
 #forecast-demo #demo-country-select{width:100%;margin-top:6px;font-size:15px}
 #forecast-demo #demo-country-select option{padding:5px}
+
+#forecast-demo .demo-chart-actions{position:absolute;left:60px;bottom:58px;z-index:3;display:flex;gap:6px}
+#forecast-demo .demo-chart-actions button{display:grid;place-items:center;width:34px;height:34px;min-height:34px;padding:7px;background:var(--card);box-shadow:0 1px 4px #0001}
+#forecast-demo .demo-chart-actions svg{width:18px;height:18px;overflow:visible}
+
+#forecast-demo #demo-model-dialog{position:fixed;inset:0;margin:auto;width:400px;max-width:calc(100vw - 32px);box-sizing:border-box;padding:24px;border:1px solid var(--border2);border-radius:10px;background:var(--card);color:var(--text);box-shadow:0 16px 60px #0003}
+#forecast-demo #demo-model-dialog::backdrop{background:#0007}
+#forecast-demo #demo-model-dialog h3{font-size:20px;font-weight:600}
+#forecast-demo #demo-model-dialog p{margin:12px 0 24px;color:var(--grey);font-size:14px;line-height:1.6}
+#forecast-demo .demo-dialog-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+
+#forecast-demo #demo-country::after{content:" ▾";font-size:.65em;vertical-align:middle}
+
+#forecast-demo #demo-control-tooltip{position:fixed;z-index:20;pointer-events:none;max-width:calc(100vw - 32px);padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--card);color:var(--text);box-shadow:0 3px 12px #0002;font-size:12px;font-weight:400;line-height:1.4}
