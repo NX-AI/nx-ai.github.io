@@ -36,8 +36,8 @@
 @media(max-width:600px){#forecast-demo .demo-panel{padding:14px}#forecast-demo .demo-controls{gap:8px}#forecast-demo .demo-controls label:first-child{flex-basis:100%}#forecast-demo .demo-controls label:not(:first-child){flex:1}#forecast-demo .demo-primary{flex-basis:100%}#forecast-demo .demo-meta{gap:4px 12px}}
 #forecast-demo input[type=range]{accent-color:var(--teal);cursor:pointer;min-height:28px;margin:0;touch-action:pan-y}
 #forecast-demo input[type=range]:disabled{cursor:default;opacity:.45}
-#forecast-demo .demo-horizon-label{min-width:170px;display:block}
-#forecast-demo #demo-horizon,#forecast-demo #demo-context{display:block;width:100%;margin-top:4px}
+#forecast-demo .demo-horizon-label{min-width:170px;display:block;line-height:18px}
+#forecast-demo #demo-horizon,#forecast-demo #demo-context{display:block;width:100%;height:38px;margin:4px 0 0}
 #forecast-demo .demo-history-hint{font-size:11px;color:var(--grey);margin:0 0 8px}
 #forecast-demo #demo-chart{cursor:crosshair}
 
@@ -45,11 +45,11 @@
 #forecast-demo #demo-tooltip-time{display:block;color:var(--grey);margin-bottom:3px}
 #forecast-demo #demo-tooltip-value{display:block;font-weight:600}
 
-#forecast-demo .demo-country-picker{position:relative;display:inline-block}
-#forecast-demo #demo-country{font:inherit;color:var(--teal);text-decoration:none;border:0;padding:0;background:transparent;min-height:0;white-space:normal;text-align:left}
-#forecast-demo #demo-country-menu{position:absolute;top:100%;left:0;z-index:5;width:280px;max-width:80vw;padding:12px;background:var(--card);border:1px solid var(--border2);box-shadow:0 4px 16px #0002}
-#forecast-demo #demo-country-select{width:100%;margin-top:6px;font-size:15px}
-#forecast-demo #demo-country-select option{padding:5px}
+#forecast-demo .demo-country-picker,#forecast-demo .demo-series-picker{position:relative;display:inline-block}
+#forecast-demo #demo-country,#forecast-demo #demo-series-toggle{font:inherit;color:var(--teal);text-decoration:none;border:0;padding:0;background:transparent;min-height:0;white-space:normal;text-align:left}
+#forecast-demo #demo-country-menu,#forecast-demo #demo-series-menu{position:absolute;top:100%;left:0;z-index:5;width:280px;max-width:80vw;padding:12px;background:var(--card);border:1px solid var(--border2);box-shadow:0 4px 16px #0002}
+#forecast-demo #demo-country-select,#forecast-demo #demo-series{width:100%;margin-top:6px;font-size:15px}
+#forecast-demo #demo-country-select option,#forecast-demo #demo-series option{padding:5px 12px}
 
 #forecast-demo .demo-chart-actions{position:absolute;left:60px;bottom:58px;z-index:3;display:flex;gap:6px}
 #forecast-demo .demo-chart-actions button{display:grid;place-items:center;width:34px;height:34px;min-height:34px;padding:7px;background:var(--card);box-shadow:0 1px 4px #0001}
@@ -61,6 +61,19 @@
 #forecast-demo #demo-model-dialog p{margin:12px 0 24px;color:var(--grey);font-size:14px;line-height:1.6}
 #forecast-demo .demo-dialog-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 
-#forecast-demo #demo-country::after{content:" ▾";font-size:.65em;vertical-align:middle}
+#forecast-demo #demo-country::after,#forecast-demo #demo-series-toggle::after{content:" ▾";font-size:.65em;vertical-align:middle}
 
 #forecast-demo #demo-control-tooltip{position:fixed;z-index:20;pointer-events:none;max-width:calc(100vw - 32px);padding:7px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--card);color:var(--text);box-shadow:0 3px 12px #0002;font-size:12px;font-weight:400;line-height:1.4}
+
+#forecast-demo .demo-generation-field{flex:1;min-width:180px;display:grid;gap:4px}
+#forecast-demo .demo-field-label{color:var(--grey);font-size:12px;line-height:18px}
+#forecast-demo #demo-series-toggle{font-size:14px;min-height:38px}
+@media(max-width:600px){#forecast-demo .demo-generation-field{flex-basis:100%}}
+
+#forecast-demo #demo-country-menu label,#forecast-demo #demo-series-menu label{font-weight:600;color:var(--text)}
+
+#forecast-demo .demo-series-picker{display:flex;align-items:center;height:38px}
+
+#forecast-demo #demo-series,#forecast-demo #demo-series option{font-size:14px}
+
+#forecast-demo .demo-controls>button{align-self:center;box-sizing:border-box;height:38px;min-height:38px;display:inline-flex;align-items:center;justify-content:center;line-height:18px;padding:0 12px}

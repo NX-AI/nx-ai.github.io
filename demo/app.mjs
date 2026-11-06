@@ -14,7 +14,7 @@ function status(message, error = false) {
 }
 function busy(value) {
   running = value;
-  ['series','context','horizon','refresh','country','country-select'].forEach(id => $(id).disabled = value || loading || !data);
+  ['series','series-toggle','context','horizon','refresh','country','country-select'].forEach(id => $(id).disabled = value || loading || !data);
   $('run').disabled = value || loading || !selected;
   $('cancel').hidden = !value;
   $('download').disabled = value || loading || !forecast;
@@ -23,6 +23,7 @@ function choose() {
   forecast = null;
   try {
     selected = selectSeries(data.series.find(s => s.id === $('series').value), Number($('context').value) / 24, step());
+    $('series-toggle').textContent = selected.name;
     const last = selected.start + (selected.values.length - 1) * step();
     const age = Math.max(0, (Date.now() / 1000 - last - step()) / 3600);
     const missing = selected.values.filter(v => v === null).length;
@@ -49,7 +50,7 @@ async function refresh(nextCountry = country) {
     const previous = $('series').value;
     const horizonHours = Number($('horizon').value) * step() / 3600;
     data = next; country = nextCountry;
-    $('country').textContent = `${flag(country)}${countryName(country)}`;
+    $('country').textContent = `${flag(country)} ${countryName(country)}`;
     $('country-select').value = country;
     $('source').href = `https://energy-charts.info/charts/power/chart.htm?l=en&c=${country}`;
     $('horizon').max = 7 * 86400 / step();
@@ -178,7 +179,7 @@ $('run').onclick = () => {
   worker.postMessage({values:selected.values,horizon:Number($('horizon').value)});
 };
 $('cancel').onclick=()=>{worker?.terminate();worker=null;hasModel=false;busy(false);status('Forecast cancelled. You can retry when ready.');};
-$('series').onchange=()=>{choose();if(hasModel && selected) $('run').click();};
+$('series').onchange=()=>{closeSeries(); $('series-toggle').focus(); choose();if(hasModel && selected) $('run').click();};
 $('context').oninput=()=>{
   const hours=Number($('context').value);
   const days=Math.floor(hours/24), rest=hours%24;
@@ -205,11 +206,29 @@ $('download').onclick=()=>{
   const url=URL.createObjectURL(new Blob([rows.join('\n')+'\n'],{type:'text/csv'}));
   const a=document.createElement('a');a.href=url;a.download=`tirex2-${country.toLowerCase()}-${selected.id}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
+function closeSeries() {
+  $('series-menu').hidden = true;
+  $('series-toggle').setAttribute('aria-expanded', 'false');
+}
+$('series-toggle').onclick = () => {
+  const open = $('series-menu').hidden;
+  closeCountries();
+  $('series-menu').hidden = !open;
+  $('series-toggle').setAttribute('aria-expanded', String(open));
+  if (open) {
+    const menu = $('series-menu'), anchor = $('series-toggle').getBoundingClientRect();
+    menu.style.left = `${Math.max(8 - anchor.left, Math.min(0, document.documentElement.clientWidth - 8 - anchor.left - menu.offsetWidth))}px`;
+    $('series').focus();
+  }
+};
+document.addEventListener('click', event => { if (!event.target.closest('.demo-series-picker')) closeSeries(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !$('series-menu').hidden) { closeSeries(); $('series-toggle').focus(); } });
 function closeCountries() {
   $('country-menu').hidden = true;
   $('country').setAttribute('aria-expanded', 'false');
 }
 $('country').onclick = () => {
+  closeSeries();
   const open = $('country-menu').hidden;
   $('country-menu').hidden = !open;
   $('country').setAttribute('aria-expanded', String(open));
@@ -235,7 +254,7 @@ async function initialize() {
     countries = list;
   } catch { /* The bundled Austria snapshot remains usable if the manifest is unavailable. */ }
   $('country-select').replaceChildren(...countries.sort((a,b)=>countryName(a.code).localeCompare(countryName(b.code))).map(c => {
-    const option = new Option(`${flag(c.code)} ${countryName(c.code)}${c.available ? '' : ' (unavailable)'}`, c.code);
+    const option = new Option(`${flag(c.code)} ${countryName(c.code)}${c.available ? '' : ' (unavailable)'}`, c.code);
     option.disabled = !c.available; return option;
   }));
   $('country-select').value = country;

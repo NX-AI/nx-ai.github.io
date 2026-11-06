@@ -1,12 +1,12 @@
 <section id="forecast-demo" aria-labelledby="forecast-title">
   <div class="section-head">
     <div class="tag">TRY TiRex-2</div>
-    <h2 id="forecast-title">Forecast electricity generation in <span class="demo-country-picker"><button id="demo-country" data-tooltip="Choose a country" aria-expanded="false" aria-controls="demo-country-menu" disabled>🇦🇹Austria</button><span id="demo-country-menu" hidden><label for="demo-country-select">Choose a country</label><select id="demo-country-select" size="8" aria-label="Country"></select></span></span></h2>
+    <h2 id="forecast-title">Forecast electricity generation in <span class="demo-country-picker"><button id="demo-country" data-tooltip="Choose a country" aria-expanded="false" aria-controls="demo-country-menu" disabled>🇦🇹 Austria</button><span id="demo-country-menu" hidden><label for="demo-country-select">Choose a country</label><select id="demo-country-select" size="8" aria-label="Country"></select></span></span></h2>
     <p class="demo-intro">Real-time data, forecast locally in your browser via <a href="https://nx-ai.github.io/tirex-2/how-to/onnx/" data-tooltip="Run TiRex-2 everywhere." target="_blank" rel="noopener noreferrer" aria-label="TiRex-2 ONNX (opens in a new tab)">TiRex-2 ONNX <span aria-hidden="true">↗</span></a>.</p>
   </div>
   <div class="demo-panel">
     <div class="demo-controls">
-      <label>Generation<select id="demo-series" disabled><option>Loading…</option></select></label>
+      <div class="demo-generation-field"><span class="demo-field-label">Generation</span><div class="demo-series-picker"><button id="demo-series-toggle" data-tooltip="Choose generation source" aria-expanded="false" aria-controls="demo-series-menu" disabled>Loading…</button><div id="demo-series-menu" hidden><label for="demo-series">Choose generation source</label><select id="demo-series" size="8" aria-label="Generation" disabled><option>Loading…</option></select></div></div></div>
       <label class="demo-horizon-label" for="demo-context">Context · <output id="demo-context-value" for="demo-context">14 days</output><input id="demo-context" type="range" min="1" max="504" step="1" value="336" aria-label="Context length" aria-valuetext="14 days"></label>
       <label class="demo-horizon-label" for="demo-horizon">Forecast · <output id="demo-horizon-value" for="demo-horizon">3 days</output><input id="demo-horizon" type="range" min="1" max="672" step="1" value="288" aria-label="Forecast horizon" aria-valuetext="3 days"></label>
       <button class="demo-primary" id="demo-run" disabled>Forecast</button>
