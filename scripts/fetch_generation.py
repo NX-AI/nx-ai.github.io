@@ -1,4 +1,4 @@
-"""Fetch public generation for every country supported by Energy-Charts. No credentials; never synthesize missing readings."""
+"""Fetch public generation for every country supported by Energy-Charts. No credentials; flag partial totals and preserve wholly missing intervals."""
 import argparse
 import datetime as dt
 import json
@@ -27,17 +27,17 @@ GENERATION_TYPES += ('nuclear', 'fossil_brown_coal_lignite', 'fossil_hard_coal',
 
 
 def filter_usable_series(snapshot, now):
-    """Require recent, mostly complete history; never turn unknown readings into zero."""
+    """Keep recent totals with quality flags, and mostly complete individual sources."""
     step = snapshot['step_seconds']
     window = 14 * 86400 // step
     usable = []
     for series in snapshot['series']:
         values = series['values'][-window:]
         end = series['start'] + len(series['values']) * step
-        minimum = window if series['id'] == 'total_generation' else 86400 // step
+        minimum = 86400 // step
         if (len(values) >= minimum
                 and now.timestamp() - end <= 86400
-                and sum(map(is_number, values)) / len(values) >= 0.95):
+                and (series['id'] == 'total_generation' or sum(map(is_number, values)) / len(values) >= 0.95)):
             usable.append(series)
     return {**snapshot, 'series': usable}
 
@@ -67,8 +67,10 @@ def normalize(payload, now, country='at'):
             raise ValueError('Duplicate timestamp in source')
         values = dict(row['values'])
         components = [values.get(key) for key in production]
-        # A partial sum would understate total generation. Preserve it as a gap.
-        values['total_generation'] = sum(components) if all(map(is_number, components)) else None
+        # Preserve which totals depend on zero-filled source components.
+        observed = [v for v in components if is_number(v)]
+        values['total_generation'] = sum(observed) if observed else None
+        values['total_incomplete'] = not all(map(is_number, components))
         points[stamp] = values
     if not points:
         raise ValueError('No completed observations')
@@ -84,8 +86,14 @@ def normalize(payload, now, country='at'):
         end = max(finite)
         start = max(min(finite), end - 2047 * step)
         timestamps = list(range(start, end + step, step))
-        series.append({'id': key, 'name': name, 'start': start,
-                       'values': [finite.get(t) for t in timestamps]})
+        item = {'id': key, 'name': name, 'start': start,
+                'values': [finite.get(t) for t in timestamps]}
+        if key == 'total_generation':
+            item['incomplete'] = [points.get(t, {}).get('total_incomplete', True) for t in timestamps]
+            item['missing_components'] = [[names[component] for component in production
+                                           if not is_number(points.get(t, {}).get(component))]
+                                          for t in timestamps]
+        series.append(item)
     if not series:
         raise ValueError('Not enough observations for a forecast')
     return {'version': 1, 'country': country.upper(), 'unit': 'MW', 'step_seconds': step,

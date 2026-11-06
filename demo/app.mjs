@@ -1,4 +1,4 @@
-import {selectSeries, formatDuration} from './forecast-core.mjs';
+import {selectSeries, formatDuration} from './forecast-core.mjs?v=missing-components';
 const $ = id => document.getElementById(`demo-${id}`);
 let data, selected, forecast, worker, running = false, hasModel = false;
 let countries = [{code:'AT',file:'data.json',available:true}], country = 'AT', loading = false;
@@ -27,7 +27,9 @@ function choose() {
     const last = selected.start + (selected.values.length - 1) * step();
     const age = Math.max(0, (Date.now() / 1000 - last - step()) / 3600);
     const missing = selected.values.filter(v => v === null).length;
-    $('data-note').textContent = `Updated ${date(Date.parse(data.fetched_at) / 1000)}. Forecast starts ${date(last + step())}.${age > 6 ? ' Observations are delayed.' : ''}${missing ? ` ${missing} readings are missing.` : ''}${data.series.some(s => s.id === 'total_generation') ? '' : ' Total generation is unavailable because its history is incomplete or delayed.'}`;
+    const incomplete = selected.incomplete?.filter((flag, i) => flag && Number.isFinite(selected.values[i])).length || 0;
+    $('incomplete-legend').hidden = !incomplete;
+    $('data-note').textContent = `Updated ${date(Date.parse(data.fetched_at) / 1000)}. Forecast starts ${date(last + step())}.${age > 6 ? ' Observations are delayed.' : ''}${missing ? ` ${missing} readings are missing.` : ''}${incomplete ? ` Red totals count missing components as zero (${incomplete} readings).` : ''}${data.series.some(s => s.id === 'total_generation') ? '' : ' Total generation is unavailable because its history is incomplete or delayed.'}`;
     $('chart-title').textContent = `${selected.name}${selected.id === 'total_generation' ? '' : ' generation'} · ${countryName(country)}`;
     $('empty').hidden = true;
     status(hasModel ? 'Ready. Adjust the forecast horizon or run a new forecast.' : 'Ready. Load the model to forecast on your device. First download: approximately 407 MB.');
@@ -113,6 +115,15 @@ function draw() {
     line(visibleForecast.median,n,'var(--accent)');
   }
   line(obs,0,'var(--observed)');
+  let incompletePath = '';
+  obs.forEach((v, i) => {
+    if (!Number.isFinite(v)) return;
+    if (i && Number.isFinite(obs[i-1]) && (selected.incomplete?.[i] || selected.incomplete?.[i-1])) {
+      incompletePath += `M${x(i-1)},${y(obs[i-1])}L${x(i)},${y(v)} `;
+    }
+    if (selected.incomplete?.[i] && (!selected.incomplete[i-1] || !Number.isFinite(obs[i-1])) && (!selected.incomplete[i+1] || !Number.isFinite(obs[i+1]))) el('circle', {cx:x(i), cy:y(v), r:2.5, fill:'#d64545'});
+  });
+  if (incompletePath) el('path', {d:incompletePath, fill:'none', stroke:'#d64545', 'stroke-width':2});
   const marker = el('line',{y1:top,y2:bottom,stroke:'var(--accent)','stroke-dasharray':'3 4',visibility:'hidden'});
   const hideTooltip = () => { marker.setAttribute('visibility','hidden'); tooltip.hidden = true; };
   const inspect = event => {
@@ -121,7 +132,11 @@ function draw() {
     const i = Math.max(0,Math.min(n+h-1,Math.round((point.x-left)/plotWidth*(n+h-1))));
     marker.setAttribute('x1',x(i));marker.setAttribute('x2',x(i));marker.setAttribute('visibility','visible');
     let value;
-    if(i<n) value=Number.isFinite(obs[i]) ? `${number(obs[i])} MW observed` : 'Missing observation';
+    if(i<n) {
+      value=Number.isFinite(obs[i]) ? `${number(obs[i])} MW${selected.incomplete?.[i] ? '' : ' observed'}` : 'Missing observation';
+      if (selected.missing_components?.[i]?.length) value += `\nMissing components:\n${selected.missing_components[i].map(name => `• ${name}`).join('\n')}`;
+      else if (selected.incomplete?.[i]) value += '\nMissing components: details unavailable';
+    }
     else if(visibleForecast) { const k=i-n;value=`${number(visibleForecast.median[k])} MW median · ${number(visibleForecast.low[k])}–${number(visibleForecast.high[k])} MW (10–90%)`; }
     else value='Run the model to see a forecast';
     $('tooltip-time').textContent=date(start+i*step());

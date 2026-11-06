@@ -19,15 +19,17 @@ export function extractForecast(data, dims, horizon) {
   return {low: result[0], median: result[1], high: result[2]};
 }
 export function selectSeries(series, days, step = 900) {
-  if (!Number.isInteger(series.start) || !Array.isArray(series.values) || series.values.length > CONTEXT) {
+  if (!series || !Number.isInteger(series.start) || !Array.isArray(series.values) || series.values.length > CONTEXT) {
     throw new Error('Invalid generation data.');
   }
   if (series.values.some(v => v !== null && !Number.isFinite(v))) throw new Error('Invalid generation value.');
+  if (series.incomplete !== undefined && (!Array.isArray(series.incomplete) || series.incomplete.length !== series.values.length || series.incomplete.some(v => typeof v !== 'boolean'))) throw new Error('Invalid generation quality flags.');
+  if (series.missing_components !== undefined && (!Array.isArray(series.missing_components) || series.missing_components.length !== series.values.length || series.missing_components.some(names => !Array.isArray(names) || names.some(name => typeof name !== 'string')))) throw new Error('Invalid missing-component metadata.');
   const steps = days * 86400 / step;
   if (!Number.isInteger(steps) || days < 1 / 24 || days > 21 || ![900, 1800, 3600].includes(step)) throw new Error("Context must be between 1 hour and 21 days.");
   const values = series.values.slice(-steps);
   if (!Number.isFinite(values.at(-1))) throw new Error('Latest observation is missing.');
-  return {...series, values, start: series.start + (series.values.length - values.length) * step};
+  return {...series, values, ...(series.incomplete ? {incomplete: series.incomplete.slice(-steps)} : {}), ...(series.missing_components ? {missing_components: series.missing_components.slice(-steps)} : {}), start: series.start + (series.values.length - values.length) * step};
 }
 
 export function formatDuration(minutes) {

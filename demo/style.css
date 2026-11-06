@@ -14,7 +14,7 @@
 #forecast-demo .demo-meta strong{font-size:20px;color:var(--text);font-weight:500}
 #forecast-demo .demo-chart-heading{margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 #forecast-demo h3{font-size:14px;font-weight:500;margin:0}
-#forecast-demo .demo-legend{display:flex;gap:14px;font-size:11px;color:var(--grey)}
+#forecast-demo .demo-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--grey)}
 #forecast-demo .demo-legend span:before{content:'';display:inline-block;width:12px;height:3px;background:var(--observed);margin:0 5px 3px 0}
 #forecast-demo .demo-legend span:nth-child(2):before{background:var(--teal)}
 #forecast-demo .demo-legend span:nth-child(3):before{height:8px;background:var(--shade);border:1px solid var(--teal);margin-bottom:0}
@@ -43,7 +43,7 @@
 
 #forecast-demo #demo-tooltip{position:absolute;z-index:2;pointer-events:none;max-width:min(300px,calc(100% - 16px));padding:9px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--card);color:var(--text);box-shadow:0 3px 12px #0002;font-size:12px;line-height:1.5}
 #forecast-demo #demo-tooltip-time{display:block;color:var(--grey);margin-bottom:3px}
-#forecast-demo #demo-tooltip-value{display:block;font-weight:600}
+#forecast-demo #demo-tooltip-value{display:block;font-weight:600;white-space:pre-line}
 
 #forecast-demo .demo-country-picker,#forecast-demo .demo-series-picker{position:relative;display:inline-block}
 #forecast-demo #demo-country,#forecast-demo #demo-series-toggle{font:inherit;color:var(--teal);text-decoration:none;border:0;padding:0;background:transparent;min-height:0;white-space:normal;text-align:left}
@@ -77,3 +77,5 @@
 #forecast-demo #demo-series,#forecast-demo #demo-series option{font-size:14px}
 
 #forecast-demo .demo-controls>button{align-self:center;box-sizing:border-box;height:38px;min-height:38px;display:inline-flex;align-items:center;justify-content:center;line-height:18px;padding:0 12px}
+
+#forecast-demo #demo-incomplete-legend:before{background:#d64545}
