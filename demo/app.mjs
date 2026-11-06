@@ -8,7 +8,10 @@ const flag = code => [...(code === 'UK' ? 'GB' : code)].map(c => String.fromCode
 const step = () => data?.step_seconds || 900;
 const date = t => new Intl.DateTimeFormat('en-GB', {timeZone:data?.timezone || 'Europe/Vienna', day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(new Date(t * 1000));
 const number = v => new Intl.NumberFormat('en-GB', {maximumFractionDigits:0}).format(v);
-function status(message, error = false) { $('status').textContent = message; $('status').classList.toggle('error', error); $('download-progress').hidden = true; }
+function status(message, error = false) {
+  $('download-progress').hidden = true;
+  if (error) window.alert(message);
+}
 function busy(value) {
   running = value;
   ['series','context','horizon','refresh','country','country-select'].forEach(id => $(id).disabled = value || loading || !data);
@@ -136,12 +139,20 @@ function draw() {
   svg.onpointercancel=hideTooltip;
 }
 new ResizeObserver(() => draw()).observe($('chart'));
+$('model-dialog').onclose = () => {
+  worker?.postMessage({type:'download-decision', approved:$('model-dialog').returnValue === 'download'});
+};
 $('run').onclick = () => {
   if (running || !selected) return;
   forecast = null; draw(); busy(true);
   if (!worker) {
     worker = new Worker(new URL('./inference-worker.mjs',import.meta.url), {type:'module'});
     worker.onmessage = ({data: message}) => {
+      if (message.type === 'confirm-download') {
+        $('model-dialog').returnValue = '';
+        $('model-dialog').showModal();
+      }
+      if (message.type === 'cancelled') { busy(false); status('Download cancelled.'); $('run').focus(); }
       if (message.type === 'status') status(message.message);
       if (message.type === 'progress') {
         $('download-progress').hidden = false;
@@ -157,7 +168,7 @@ $('run').onclick = () => {
       }
       if (message.type === 'error') { status(`Forecast failed: ${message.message} Try a desktop browser with more free memory, or retry.`,true); worker.terminate();worker=null;hasModel=false;busy(false); }
       if (message.type === 'result') {
-        forecast=message.forecast;hasModel=true;busy(false);draw();$('run').textContent='Run forecast ↗';
+        forecast=message.forecast;hasModel=true;busy(false);draw();
         status(`Forecast complete in ${message.seconds.toFixed(1)} seconds · ONNX Runtime Web / WASM · computed locally.`);
       }
     };
@@ -183,7 +194,7 @@ $('horizon').oninput=()=>{
   $('horizon-value').textContent=label;
   $('horizon').setAttribute('aria-valuetext',label);
   forecast=null;$('download').disabled=true;draw();
-  status(hasModel?'Release the slider to update the forecast.':'Load the model to forecast this horizon.');
+  status(hasModel?'Release the slider to update the forecast.':'');
 };
 $('horizon').onchange=()=>{if(hasModel && selected) $('run').click();};
 $('refresh').onclick=()=>refresh();
@@ -233,3 +244,40 @@ async function initialize() {
 initialize();
 // Update freshness and observations while open, but never interrupt active inference.
 setInterval(()=>{if(!running && !document.hidden) refresh();},30*60*1000);
+
+// Shared overlay for control hints, including keyboard focus.
+const hint = document.createElement('div');
+hint.id = 'demo-control-tooltip';
+hint.setAttribute('role', 'tooltip');
+hint.hidden = true;
+document.getElementById('forecast-demo').append(hint);
+let hintTarget;
+function hideHint() {
+  hint.hidden = true;
+  hintTarget?.removeAttribute('aria-describedby');
+  hintTarget = null;
+}
+function showHint(target) {
+  hideHint();
+  if (target.disabled || target.getAttribute('aria-expanded') === 'true') return;
+  hintTarget = target;
+  hint.textContent = target.dataset.tooltip;
+  target.setAttribute('aria-describedby', hint.id);
+  hint.hidden = false;
+  const rect = target.getBoundingClientRect();
+  const left = Math.max(8, Math.min(rect.left + (rect.width - hint.offsetWidth) / 2,
+    document.documentElement.clientWidth - hint.offsetWidth - 8));
+  const top = rect.top >= hint.offsetHeight + 16 ? rect.top - hint.offsetHeight - 8 : rect.bottom + 8;
+  hint.style.left = `${left}px`;
+  hint.style.top = `${top}px`;
+}
+document.querySelectorAll('#forecast-demo [data-tooltip]').forEach(target => {
+  target.addEventListener('pointerenter', () => showHint(target));
+  target.addEventListener('focus', () => showHint(target));
+  target.addEventListener('pointerleave', hideHint);
+  target.addEventListener('blur', hideHint);
+  target.addEventListener('click', hideHint);
+});
+document.addEventListener('keydown', event => { if (event.key === 'Escape') hideHint(); });
+window.addEventListener('scroll', hideHint, true);
+window.addEventListener('resize', hideHint);

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import hashlib
 import os
 import re
 import shutil
@@ -327,6 +328,8 @@ def main() -> int:
         lstrip_blocks=True,
     )
     html = env.get_template("index.html.j2").render(
+        demo_script_version=hashlib.sha256((ROOT / "demo/app.mjs").read_bytes()).hexdigest()[:12],
+        demo_style_version=hashlib.sha256((ROOT / "demo/style.css").read_bytes()).hexdigest()[:12],
         documentation=data["documentation"],
         groups=data["groups"],
         total=len(projects),
