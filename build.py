@@ -1,8 +1,8 @@
 """Build https://nx-ai.github.io from projects.yml.
 
 Usage:
-    pip install -r requirements.txt
-    python build.py              # writes _site/index.html
+    uv sync --locked
+    uv run build.py              # writes _site/index.html
 
 Star counts are fetched from the GitHub API at build time. Set GITHUB_TOKEN to avoid the
 low anonymous rate limit (GitHub Actions provides it automatically).

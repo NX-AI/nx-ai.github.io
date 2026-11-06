@@ -21,21 +21,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
-      - run: pip install -r requirements.txt
+          enable-cache: true
+      - run: uv sync --locked
       - name: Build site
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python build.py
+        run: uv run --locked python build.py
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
           cache: npm
       - run: npm ci
       - name: Check search contracts
-        run: node --test search/tests/*.test.mjs
+        run: uv run --locked node --test search/tests/*.test.mjs
       - uses: actions/cache@v6
         with:
           path: .hf-cache
