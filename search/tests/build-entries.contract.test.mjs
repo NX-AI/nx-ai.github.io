@@ -45,6 +45,7 @@ function build() {
   workdir = fs.mkdtempSync(path.join(os.tmpdir(), 'nxai-build-entries-'));
   for (const file of ['build.py', 'projects.yml']) fs.copyFileSync(path.join(root, file), path.join(workdir, file));
   fs.cpSync(path.join(root, 'templates'), path.join(workdir, 'templates'), { recursive: true });
+  fs.cpSync(path.join(root, 'demo'), path.join(workdir, 'demo'), { recursive: true });
   const searchDir = path.join(root, 'search');
   fs.cpSync(searchDir, path.join(workdir, 'search'), {
     recursive: true,

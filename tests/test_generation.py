@@ -73,7 +73,7 @@ class GenerationTests(unittest.TestCase):
             manifest = json.loads((Path(directory) / 'countries.json').read_text())
             self.assertEqual([c['available'] for c in manifest], [True, True, False])
 
-    def test_quality_filter_keeps_flagged_totals_and_checks_individual_sources(self):
+    def test_sparse_and_delayed_components_remain_available_for_recent_country(self):
         now = dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc)
         step = 900
         def series(key, count=1344, missing=0, lag=0):
@@ -91,7 +91,9 @@ class GenerationTests(unittest.TestCase):
         self.assertFalse(kept(series('total_generation', lag=97)))
         solar = series('solar', count=200)
         self.assertEqual(len(kept(series('total_generation', missing=1247), solar)), 2)
-        self.assertFalse(kept(series('solar', missing=516)))
+        self.assertTrue(kept(series('solar', missing=516)))
+        delayed = series('fossil_oil', lag=200)
+        self.assertEqual(kept(healthy, delayed), [healthy, delayed])
         self.assertFalse(kept(series('solar', lag=97)))
 
     def test_total_includes_other_renewables_and_battery_discharge(self):

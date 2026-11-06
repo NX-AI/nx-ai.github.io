@@ -4,7 +4,7 @@
   "unit": "MW",
   "step_seconds": 3600,
   "timezone": "Asia/Tbilisi",
-  "fetched_at": "2026-11-06T21:03:59.197401+00:00",
+  "fetched_at": "2026-11-06T21:11:56.777714+00:00",
   "source": "https://api.energy-charts.info/v2/public_power",
   "attribution": "Energy-Charts.info / Fraunhofer ISE",
   "license": "CC BY 4.0",

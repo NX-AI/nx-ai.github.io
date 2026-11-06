@@ -384,3 +384,15 @@ def main() -> int:
     OUT_DIR.mkdir(exist_ok=True)
     (OUT_DIR / "index.html").write_text(html, encoding="utf-8")
     shutil.copytree(ROOT / "demo", OUT_DIR / "demo", dirs_exist_ok=True)
+    search_dir = OUT_DIR / "search"
+    search_dir.mkdir(exist_ok=True)
+    (search_dir / "entries.json").write_text(search_entries_json + "\n", encoding="utf-8")
+    for asset in (ROOT / "search").iterdir():
+        if asset.is_file() and (asset.suffix == ".js" or asset.name == "ui.css"):
+            shutil.copy2(asset, search_dir / asset.name)
+    print(f"wrote {OUT_DIR / 'index.html'} ({len(projects)} projects)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
