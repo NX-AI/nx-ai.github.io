@@ -27,19 +27,11 @@ GENERATION_TYPES += ('nuclear', 'fossil_brown_coal_lignite', 'fossil_hard_coal',
 
 
 def filter_usable_series(snapshot, now):
-    """Keep recent totals with quality flags, and mostly complete individual sources."""
+    """Keep every component when the country has any recent observations."""
     step = snapshot['step_seconds']
-    window = 14 * 86400 // step
-    usable = []
-    for series in snapshot['series']:
-        values = series['values'][-window:]
-        end = series['start'] + len(series['values']) * step
-        minimum = 86400 // step
-        if (len(values) >= minimum
-                and now.timestamp() - end <= 86400
-                and (series['id'] == 'total_generation' or sum(map(is_number, values)) / len(values) >= 0.95)):
-            usable.append(series)
-    return {**snapshot, 'series': usable}
+    recent = any(now.timestamp() - (series['start'] + len(series['values']) * step) <= 86400
+                 for series in snapshot['series'])
+    return snapshot if recent else {**snapshot, 'series': []}
 
 
 def is_number(value):
@@ -147,7 +139,7 @@ def main():
             print(f'::warning::{country}: refresh failed ({error}); retaining any dated snapshot.', file=sys.stderr)
         available = False
         if path.exists():
-            # Failed refreshes must not keep stale or unreliable options selectable.
+            # Failed refreshes must not keep countries with only stale data selectable.
             saved = json.loads(path.read_text())
             if saved.get('version') == 1:
                 saved = filter_usable_series(saved, now)

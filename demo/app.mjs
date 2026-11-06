@@ -1,4 +1,4 @@
-import {selectSeries, formatDuration} from './forecast-core.mjs?v=missing-components';
+import {selectSeries, formatDuration} from './forecast-core.mjs?v=full-context';
 const $ = id => document.getElementById(`demo-${id}`);
 let data, selected, forecast, worker, running = false, hasModel = false;
 let countries = [{code:'AT',file:'data.json',available:true}], country = 'AT', loading = false;
@@ -20,6 +20,7 @@ function busy(value) {
   $('download').disabled = value || loading || !forecast;
 }
 function choose() {
+  $('forecast-time').hidden = true;
   forecast = null;
   try {
     selected = selectSeries(data.series.find(s => s.id === $('series').value), Number($('context').value) / 24, step());
@@ -65,7 +66,6 @@ async function refresh(nextCountry = country) {
     else if (data.series.some(s => s.id === 'total_generation')) $('series').value = 'total_generation';
     else $('series').value = data.series[0].id;
     loading = false; choose();
-    if (hasModel && selected) $('run').click();
   } catch (error) {
     $('country-select').value = country;
     status(`${error.message} ${data ? 'Keeping the previously loaded observations.' : 'Please try Refresh data again later.'}`, true);
@@ -161,6 +161,7 @@ $('model-dialog').onclose = () => {
 };
 $('run').onclick = () => {
   if (running || !selected) return;
+  $('forecast-time').hidden = true;
   forecast = null; draw(); busy(true);
   if (!worker) {
     worker = new Worker(new URL('./inference-worker.mjs',import.meta.url), {type:'module'});
@@ -186,6 +187,8 @@ $('run').onclick = () => {
       if (message.type === 'error') { status(`Forecast failed: ${message.message} Try a desktop browser with more free memory, or retry.`,true); worker.terminate();worker=null;hasModel=false;busy(false); }
       if (message.type === 'result') {
         forecast=message.forecast;hasModel=true;busy(false);draw();
+        $('forecast-time').textContent = `Forecasted in ${message.seconds.toFixed(1)} s`;
+        $('forecast-time').hidden = false;
         status(`Forecast complete in ${message.seconds.toFixed(1)} seconds · ONNX Runtime Web / WASM · computed locally.`);
       }
     };
@@ -195,7 +198,7 @@ $('run').onclick = () => {
   worker.postMessage({values:selected.values,horizon:Number($('horizon').value)});
 };
 $('cancel').onclick=()=>{worker?.terminate();worker=null;hasModel=false;busy(false);status('Forecast cancelled. You can retry when ready.');};
-$('series').onchange=()=>{closeSeries(); $('series-toggle').focus(); choose();if(hasModel && selected) $('run').click();};
+$('series').onchange=()=>{closeSeries(); $('series-toggle').focus(); choose();};
 $('context').oninput=()=>{
   const hours=Number($('context').value);
   const days=Math.floor(hours/24), rest=hours%24;
@@ -203,17 +206,13 @@ $('context').oninput=()=>{
   $('context-value').textContent=label;
   $('context').setAttribute('aria-valuetext',label);
   if(data) choose();
-  status(hasModel?'Release the slider to update the forecast.':'Load the model to forecast this context.');
 };
-$('context').onchange=()=>{if(hasModel && selected) $('run').click();};
 $('horizon').oninput=()=>{
   const label=formatDuration(Number($('horizon').value)*step()/60);
   $('horizon-value').textContent=label;
   $('horizon').setAttribute('aria-valuetext',label);
-  forecast=null;$('download').disabled=true;draw();
-  status(hasModel?'Release the slider to update the forecast.':'');
+  forecast=null;$('forecast-time').hidden=true;$('download').disabled=true;draw();
 };
-$('horizon').onchange=()=>{if(hasModel && selected) $('run').click();};
 $('refresh').onclick=()=>refresh();
 $('download').onclick=()=>{
   if(!forecast)return;

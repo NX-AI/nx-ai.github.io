@@ -121,3 +121,18 @@ test('missing component names follow the context window',()=>{
   assert.deepEqual(selectSeries(series,1/24).missing_components,[['Solar'],['Solar','Wind'],[],[]]);
   assert.throws(()=>selectSeries({...series,missing_components:[[]]},1/24));
 });
+
+test('short histories fill the full context with gaps without moving forecast start',()=>{
+  for (const step of [900,1800,3600]) {
+    const series={start:100000,values:[0,8,9],incomplete:[false,true,false],missing_components:[[],['Wind'],[]]};
+    const selected=selectSeries(series,14,step);
+    const expected=14*86400/step;
+    assert.equal(selected.values.length,expected);
+    assert(selected.values.slice(0,-3).every(v=>v===null));
+    assert.deepEqual(selected.values.slice(-3),[0,8,9]);
+    assert.equal(selected.start+expected*step,series.start+3*step);
+    assert.equal(selected.incomplete.length,expected);
+    assert.deepEqual(selected.missing_components.slice(-3),[[],['Wind'],[]]);
+    assert.deepEqual(makeContext(selected.values),makeContext(series.values));
+  }
+});

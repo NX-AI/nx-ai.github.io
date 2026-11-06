@@ -27,9 +27,13 @@ export function selectSeries(series, days, step = 900) {
   if (series.missing_components !== undefined && (!Array.isArray(series.missing_components) || series.missing_components.length !== series.values.length || series.missing_components.some(names => !Array.isArray(names) || names.some(name => typeof name !== 'string')))) throw new Error('Invalid missing-component metadata.');
   const steps = days * 86400 / step;
   if (!Number.isInteger(steps) || days < 1 / 24 || days > 21 || ![900, 1800, 3600].includes(step)) throw new Error("Context must be between 1 hour and 21 days.");
-  const values = series.values.slice(-steps);
+  const padding = Math.max(0, steps - series.values.length);
+  const values = [...Array(padding).fill(null), ...series.values.slice(-steps)];
   if (!Number.isFinite(values.at(-1))) throw new Error('Latest observation is missing.');
-  return {...series, values, ...(series.incomplete ? {incomplete: series.incomplete.slice(-steps)} : {}), ...(series.missing_components ? {missing_components: series.missing_components.slice(-steps)} : {}), start: series.start + (series.values.length - values.length) * step};
+  return {...series, values,
+    ...(series.incomplete ? {incomplete: [...Array(padding).fill(true), ...series.incomplete.slice(-steps)]} : {}),
+    ...(series.missing_components ? {missing_components: [...Array.from({length:padding}, () => []), ...series.missing_components.slice(-steps)]} : {}),
+    start: series.start + (series.values.length - values.length) * step};
 }
 
 export function formatDuration(minutes) {
