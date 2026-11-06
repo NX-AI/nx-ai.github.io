@@ -1,4 +1,4 @@
-import {makeContext, extractForecast} from './forecast-core.mjs';
+import {forecastLong, extractForecast} from './forecast-core.mjs';
 import {downloadBytes} from './download.mjs';
 const RUNTIME = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/';
 const MODEL = 'https://huggingface.co/NX-AI/TiRex-2/resolve/30788a311699acba7e6393ad9700ea7b7cb9bb2d/model.onnx';
@@ -34,10 +34,10 @@ async function loadModel() {
 }
 self.onmessage = async ({data}) => {
   try {
-    const context = makeContext(data.values);
     await loadModel();
     status('Forecasting on your device… This may take a few minutes.');
     const start = performance.now();
+    const forecast = await forecastLong(data.values, data.horizon, async (context, horizon) => {
     const inputs = {
       context: new ort.Tensor('float32', context, [1, context.length]),
       group_vector: new ort.Tensor('float32', Float32Array.of(1), [1]),
@@ -47,11 +47,12 @@ self.onmessage = async ({data}) => {
     try {
       output = await session.run(inputs);
       const tensor = output[session.outputNames[0]];
-      self.postMessage({type: 'result', forecast: extractForecast(tensor.data, tensor.dims, data.horizon),
-        seconds: (performance.now() - start) / 1000});
+      return extractForecast(tensor.data, tensor.dims, horizon);
     } finally {
       Object.values(inputs).forEach(t => t.dispose());
       if (output) Object.values(output).forEach(t => t.dispose());
     }
+    });
+    self.postMessage({type: 'result', forecast, seconds: (performance.now() - start) / 1000});
   } catch (error) { self.postMessage({type: 'error', message: error.message || String(error)}); }
 };
