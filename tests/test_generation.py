@@ -1,5 +1,10 @@
 import datetime as dt
 import unittest
+import json
+from pathlib import Path
+import tempfile
+from unittest.mock import patch
+from scripts import fetch_generation
 from scripts.fetch_generation import normalize, GENERATION_TYPES
 
 class GenerationTests(unittest.TestCase):
@@ -15,9 +20,43 @@ class GenerationTests(unittest.TestCase):
         result = normalize(p, dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc))
         total = result['series'][0]
         self.assertEqual(total['id'], 'total_generation')
-        self.assertEqual(total['values'][0], 100)
+        self.assertEqual(total['values'][0], 10 * len(GENERATION_TYPES))
         self.assertIsNone(total['values'][40])
-        self.assertEqual(total['values'][41], 90)
+        self.assertEqual(total['values'][41], 10 * (len(GENERATION_TYPES) - 1))
+
+    def test_country_specific_total_and_hourly_grid(self):
+        p = self.payload()
+        p['country'] = 'fr'
+        p['interval_minutes'] = 60
+        p['timezone'] = 'Europe/Paris'
+        p['series'] = [{'id': key, 'name': key} for key in ('nuclear', 'solar', 'load')]
+        start = dt.datetime(2026, 10, 20, tzinfo=dt.timezone.utc)
+        for i, row in enumerate(p['data']):
+            row['timestamp'] = (start + dt.timedelta(hours=i)).isoformat()
+            row['values'] = {'nuclear': 100, 'solar': 10, 'load': 999}
+        p['data'][40]['values']['nuclear'] = None
+        result = normalize(p, dt.datetime(2026, 11, 1, tzinfo=dt.timezone.utc), 'fr')
+        self.assertEqual(result['country'], 'FR')
+        self.assertEqual(result['step_seconds'], 3600)
+        self.assertEqual(result['series'][0]['values'][0], 110)
+        self.assertIsNone(result['series'][0]['values'][40])
+        with self.assertRaises(ValueError):
+            normalize(p, dt.datetime.now(dt.timezone.utc), 'de')
+
+    def test_refresh_isolates_country_failures_and_preserves_snapshot(self):
+        payload = self.payload()
+        payload['country'] = 'de'
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'data.json'
+            output.write_text('{"dated":"snapshot"}')
+            with patch('sys.argv', ['fetch_generation', '--output', str(output)]), \
+                 patch.object(fetch_generation, 'COUNTRIES', ['at', 'de', 'fr']), \
+                 patch.object(fetch_generation, 'download', side_effect=[OSError('offline'), payload, OSError('offline')]):
+                self.assertEqual(fetch_generation.main(), 0)
+            self.assertEqual(json.loads(output.read_text()), {'dated': 'snapshot'})
+            self.assertEqual(json.loads((Path(directory) / 'data/de.json').read_text())['country'], 'DE')
+            manifest = json.loads((Path(directory) / 'countries.json').read_text())
+            self.assertEqual([c['available'] for c in manifest], [True, True, False])
 
     def payload(self):
         start = dt.datetime(2026, 10, 24, tzinfo=dt.timezone.utc)

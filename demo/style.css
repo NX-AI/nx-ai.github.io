@@ -44,3 +44,9 @@
 #forecast-demo #demo-tooltip{position:absolute;z-index:2;pointer-events:none;max-width:min(300px,calc(100% - 16px));padding:9px 12px;border:1px solid var(--border2);border-radius:6px;background:var(--card);color:var(--text);box-shadow:0 3px 12px #0002;font-size:12px;line-height:1.5}
 #forecast-demo #demo-tooltip-time{display:block;color:var(--grey);margin-bottom:3px}
 #forecast-demo #demo-tooltip-value{display:block;font-weight:600}
+
+#forecast-demo .demo-country-picker{position:relative;display:inline-block}
+#forecast-demo #demo-country{font:inherit;color:var(--teal);text-decoration:underline;text-underline-offset:.15em;border:0;padding:0;background:transparent;min-height:0;white-space:normal;text-align:left}
+#forecast-demo #demo-country-menu{position:absolute;top:100%;left:0;z-index:5;width:280px;max-width:80vw;padding:12px;background:var(--card);border:1px solid var(--border2);box-shadow:0 4px 16px #0002}
+#forecast-demo #demo-country-select{width:100%;margin-top:6px;font-size:15px}
+#forecast-demo #demo-country-select option{padding:5px}

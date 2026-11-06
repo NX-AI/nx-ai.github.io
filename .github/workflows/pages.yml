@@ -30,7 +30,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: uv run --locked python build.py
-      - name: Refresh Austrian generation (public, no token)
+      - name: Refresh generation for all countries (public, no token)
         run: uv run --locked python scripts/fetch_generation.py
       - uses: actions/setup-node@v7
         with:

@@ -1,48 +1,72 @@
-import {selectSeries} from './forecast-core.mjs';
+import {selectSeries, formatDuration} from './forecast-core.mjs';
 const $ = id => document.getElementById(`demo-${id}`);
 let data, selected, forecast, worker, running = false, hasModel = false;
-const date = t => new Intl.DateTimeFormat('en-GB', {timeZone:'Europe/Vienna', day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(new Date(t * 1000));
+let countries = [{code:'AT',file:'data.json',available:true}], country = 'AT', loading = false;
+const regionNames = new Intl.DisplayNames(['en'], {type:'region'});
+const countryName = code => regionNames.of(code === 'UK' ? 'GB' : code);
+const flag = code => [...(code === 'UK' ? 'GB' : code)].map(c => String.fromCodePoint(127397 + c.charCodeAt(0))).join('');
+const step = () => data?.step_seconds || 900;
+const date = t => new Intl.DateTimeFormat('en-GB', {timeZone:data?.timezone || 'Europe/Vienna', day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(new Date(t * 1000));
 const number = v => new Intl.NumberFormat('en-GB', {maximumFractionDigits:0}).format(v);
 function status(message, error = false) { $('status').textContent = message; $('status').classList.toggle('error', error); $('download-progress').hidden = true; }
 function busy(value) {
   running = value;
-  ['series','context','horizon','refresh'].forEach(id => $(id).disabled = value || !data);
-  $('run').disabled = value || !selected;
+  ['series','context','horizon','refresh','country','country-select'].forEach(id => $(id).disabled = value || loading || !data);
+  $('run').disabled = value || loading || !selected;
   $('cancel').hidden = !value;
-  $('download').disabled = value || !forecast;
+  $('download').disabled = value || loading || !forecast;
 }
 function choose() {
   forecast = null;
   try {
-    selected = selectSeries(data.series.find(s => s.id === $('series').value), Number($('context').value) / 24);
-    const last = selected.start + (selected.values.length - 1) * 900;
-    const age = Math.max(0, (Date.now() / 1000 - last - 900) / 3600);
+    selected = selectSeries(data.series.find(s => s.id === $('series').value), Number($('context').value) / 24, step());
+    const last = selected.start + (selected.values.length - 1) * step();
+    const age = Math.max(0, (Date.now() / 1000 - last - step()) / 3600);
     const missing = selected.values.filter(v => v === null).length;
-    $('data-note').textContent = `Snapshot fetched ${date(Date.parse(data.fetched_at) / 1000)}. ${age > 6 ? 'Data is stale. ' : ''}Forecasts start at ${date(last + 900)}, after the last completed observation. ${missing} missing intervals are passed to the model as NaN.`;
-    $('chart-title').textContent = `${selected.name}${selected.id === 'total_generation' ? '' : ' generation'} · Austria`;
-    $('details').textContent = `${selected.values.length} context steps · 15 minutes · MW · the full selected context is shown`;
+    $('data-note').textContent = `Updated ${date(Date.parse(data.fetched_at) / 1000)}. Forecast starts ${date(last + step())}.${age > 6 ? ' Observations are delayed.' : ''}${missing ? ` ${missing} readings are missing.` : ''}`;
+    $('chart-title').textContent = `${selected.name}${selected.id === 'total_generation' ? '' : ' generation'} · ${countryName(country)}`;
     $('empty').hidden = true;
     status(hasModel ? 'Ready. Adjust the forecast horizon or run a new forecast.' : 'Ready. Load the model to forecast on your device. First download: approximately 407 MB.');
   } catch (error) { selected = null; status(error.message, true); }
   busy(false); draw();
 }
-async function refresh() {
-  $('refresh').disabled = true;
+async function refresh(nextCountry = country) {
+  if (loading || running) return;
+  loading = true; busy(false);
+  status(`Loading ${countryName(nextCountry)} generation…`);
   try {
-    const response = await fetch(new URL(`./data.json?t=${Math.floor(Date.now()/60000)}`, import.meta.url), {cache:'no-store', signal:AbortSignal.timeout(20000)});
+    const entry = countries.find(c => c.code === nextCountry && c.available);
+    if (!entry) throw new Error('No generation snapshot is available for this country.');
+    const response = await fetch(new URL(`./${entry.file}?t=${Math.floor(Date.now()/60000)}`, import.meta.url), {cache:'no-store', signal:AbortSignal.timeout(20000)});
     if (!response.ok) throw new Error(`Data fetch failed (${response.status}).`);
     const next = await response.json();
-    if (next.version !== 1 || next.country !== 'AT' || next.unit !== 'MW' || next.step_seconds !== 900 || !next.series?.length || !Number.isFinite(Date.parse(next.fetched_at))) throw new Error('Unexpected generation data format.');
+    if (next.version !== 1 || next.country !== nextCountry || next.unit !== 'MW' || ![900,1800,3600].includes(next.step_seconds) || !next.series?.length || !Number.isFinite(Date.parse(next.fetched_at))) throw new Error('Unexpected generation data format.');
+    for (const series of next.series) selectSeries(series, 7, next.step_seconds);
+    new Intl.DateTimeFormat('en', {timeZone:next.timezone || 'UTC'});
     const previous = $('series').value;
-    data = next;
+    const horizonHours = Number($('horizon').value) * step() / 3600;
+    data = next; country = nextCountry;
+    $('country').textContent = `${flag(country)}${countryName(country)}`;
+    $('country-select').value = country;
+    $('source').href = `https://energy-charts.info/charts/power/chart.htm?l=en&c=${country}`;
+    $('horizon').max = 7 * 86400 / step();
+    $('horizon').value = Math.max(1, Math.min(Number($('horizon').max), Math.round(horizonHours * 3600 / step())));
+    const horizonLabel = formatDuration(Number($('horizon').value) * step() / 60);
+    $('horizon-value').textContent = horizonLabel;
+    $('horizon').setAttribute('aria-valuetext', horizonLabel);
     $('series').replaceChildren(...data.series.map(s => new Option(s.name, s.id)));
     if (data.series.some(s => s.id === previous)) $('series').value = previous;
     else if (data.series.some(s => s.id === 'total_generation')) $('series').value = 'total_generation';
-    choose();
+    loading = false; choose();
+    if (hasModel && selected) $('run').click();
   } catch (error) {
+    $('country-select').value = country;
     status(`${error.message} ${data ? 'Keeping the previously loaded observations.' : 'Please try Refresh data again later.'}`, true);
     if (!data) $('empty').textContent = 'Generation data is currently unavailable.';
-    $('refresh').disabled = false;
+  } finally {
+    loading = false;
+    if (!running) busy(false);
+    $('refresh').disabled = running;
   }
 }
 function draw() {
@@ -65,10 +89,10 @@ function draw() {
   const all = [...obs, ...(visibleForecast ? [...visibleForecast.low,...visibleForecast.high,...visibleForecast.median] : [])].filter(Number.isFinite);
   const min = Math.min(0,...all), max = Math.max(1,...all) * 1.1;
   const x = i => left + i / (n + h - 1) * plotWidth, y = v => bottom - (v - min)/(max-min)*(bottom-top);
-  el('desc',{id:'demo-chart-desc'},`${selected.name}, in MW. Observations through ${date(start+(n-1)*900)}. ${visibleForecast ? 'Forecast median and 10th to 90th quantiles follow.' : h ? 'No forecast yet.' : 'Historical observations; scroll right for the forecast.'}`);
+  el('desc',{id:'demo-chart-desc'},`${selected.name}, in MW. Observations through ${date(start+(n-1)*step())}. ${visibleForecast ? 'Forecast median and 10th to 90th quantiles follow.' : h ? 'No forecast yet.' : 'Historical observations; scroll right for the forecast.'}`);
   for (let i=0;i<=4;i++) { const v=min+(max-min)*i/4;el('line',{x1:left,x2:right,y1:y(v),y2:y(v),stroke:'var(--line)'});el('text',{x:left-10,y:y(v)+4,fill:'var(--soft)','text-anchor':'end','font-size':12},number(v)); }
   const tickCount = width < 600 ? 2 : 4;
-  for (let i=0;i<=tickCount;i++) { const k=Math.round((n+h-1)*i/tickCount);el('text',{x:x(k),y:bottom+24,fill:'var(--soft)','text-anchor':i===0?'start':i===tickCount?'end':'middle','font-size':11},date(start+k*900)); }
+  for (let i=0;i<=tickCount;i++) { const k=Math.round((n+h-1)*i/tickCount);el('text',{x:x(k),y:bottom+24,fill:'var(--soft)','text-anchor':i===0?'start':i===tickCount?'end':'middle','font-size':11},date(start+k*step())); }
   if (h > 0) {
   const cutoff=x(n);el('line',{x1:cutoff,x2:cutoff,y1:top,y2:bottom,stroke:'var(--accent)','stroke-dasharray':'4 5',opacity:.6});
   el('text',{x:Math.min(cutoff+9,right-68),y:top-8,fill:'var(--accent)','font-size':12},'Forecast →');
@@ -95,7 +119,7 @@ function draw() {
     if(i<n) value=Number.isFinite(obs[i]) ? `${number(obs[i])} MW observed` : 'Missing observation';
     else if(visibleForecast) { const k=i-n;value=`${number(visibleForecast.median[k])} MW median · ${number(visibleForecast.low[k])}–${number(visibleForecast.high[k])} MW (10–90%)`; }
     else value='Run the model to see a forecast';
-    $('tooltip-time').textContent=date(start+i*900);
+    $('tooltip-time').textContent=date(start+i*step());
     $('tooltip-value').textContent=value;
     tooltip.hidden=false;
     const bounds=svg.parentElement.getBoundingClientRect();
@@ -155,21 +179,57 @@ $('context').oninput=()=>{
 };
 $('context').onchange=()=>{if(hasModel && selected) $('run').click();};
 $('horizon').oninput=()=>{
-  const hours=Number($('horizon').value)/4;
-  $('horizon-value').textContent=`${hours} hours`;
-  $('horizon').setAttribute('aria-valuetext',`${hours} hours`);
+  const label=formatDuration(Number($('horizon').value)*step()/60);
+  $('horizon-value').textContent=label;
+  $('horizon').setAttribute('aria-valuetext',label);
   forecast=null;$('download').disabled=true;draw();
   status(hasModel?'Release the slider to update the forecast.':'Load the model to forecast this horizon.');
 };
 $('horizon').onchange=()=>{if(hasModel && selected) $('run').click();};
-$('refresh').onclick=refresh;
+$('refresh').onclick=()=>refresh();
 $('download').onclick=()=>{
   if(!forecast)return;
-  const start=selected.start+selected.values.length*900;
-  const rows=['timestamp_utc,series,unit,q10,q50,q90',...forecast.median.map((v,i)=>`${new Date((start+i*900)*1000).toISOString()},${selected.id},MW,${forecast.low[i]},${v},${forecast.high[i]}`)];
+  const start=selected.start+selected.values.length*step();
+  const rows=['timestamp_utc,country,series,unit,q10,q50,q90',...forecast.median.map((v,i)=>`${new Date((start+i*step())*1000).toISOString()},${country},${selected.id},MW,${forecast.low[i]},${v},${forecast.high[i]}`)];
   const url=URL.createObjectURL(new Blob([rows.join('\n')+'\n'],{type:'text/csv'}));
-  const a=document.createElement('a');a.href=url;a.download=`tirex2-austria-${selected.id}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const a=document.createElement('a');a.href=url;a.download=`tirex2-${country.toLowerCase()}-${selected.id}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
-refresh();
+function closeCountries() {
+  $('country-menu').hidden = true;
+  $('country').setAttribute('aria-expanded', 'false');
+}
+$('country').onclick = () => {
+  const open = $('country-menu').hidden;
+  $('country-menu').hidden = !open;
+  $('country').setAttribute('aria-expanded', String(open));
+  if (open) {
+    const menu = $('country-menu');
+    const anchor = $('country').getBoundingClientRect();
+    menu.style.left = `${Math.max(8 - anchor.left, Math.min(0, document.documentElement.clientWidth - 8 - anchor.left - menu.offsetWidth))}px`;
+    $('country-select').focus();
+  }
+};
+$('country-select').onchange = () => {
+  const next = $('country-select').value;
+  closeCountries(); $('country').focus(); refresh(next);
+};
+document.addEventListener('click', event => { if (!event.target.closest('.demo-country-picker')) closeCountries(); });
+document.addEventListener('keydown', event => { if (event.key === 'Escape' && !$('country-menu').hidden) { closeCountries(); $('country').focus(); } });
+async function initialize() {
+  try {
+    const response = await fetch(new URL('./countries.json', import.meta.url), {cache:'no-store', signal:AbortSignal.timeout(20000)});
+    if (!response.ok) throw new Error('Country list unavailable');
+    const list = await response.json();
+    if (!Array.isArray(list) || !list.some(c => c.code === 'AT' && c.available) || list.some(c => !/^[A-Z]{2}$/.test(c.code) || !/^(data\.json|data\/[a-z]{2}\.json)$/.test(c.file))) throw new Error('Invalid country list');
+    countries = list;
+  } catch { /* The bundled Austria snapshot remains usable if the manifest is unavailable. */ }
+  $('country-select').replaceChildren(...countries.sort((a,b)=>countryName(a.code).localeCompare(countryName(b.code))).map(c => {
+    const option = new Option(`${flag(c.code)} ${countryName(c.code)}${c.available ? '' : ' (unavailable)'}`, c.code);
+    option.disabled = !c.available; return option;
+  }));
+  $('country-select').value = country;
+  await refresh();
+}
+initialize();
 // Update freshness and observations while open, but never interrupt active inference.
 setInterval(()=>{if(!running && !document.hidden) refresh();},30*60*1000);

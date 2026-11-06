@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {makeContext,extractForecast,selectSeries} from '../demo/forecast-core.mjs';
+import {makeContext,extractForecast,selectSeries,forecastLong,formatDuration} from '../demo/forecast-core.mjs';
 test('NaN padding and future prevent data leakage',()=>{
   const v=Array.from({length:96},(_,i)=>i);v[20]=null;
   assert.throws(()=>makeContext(Array(4).fill(null)));
@@ -62,4 +62,40 @@ test('one-hour and 21-day context keep the same forecast cutoff',()=>{
   assert.deepEqual(selectSeries(series,1/24).values,[2044,2045,2046,2047]);
   assert.throws(()=>selectSeries(series,0));
   assert.throws(()=>selectSeries(series,22));
+});
+
+test('hourly country context retains timestamps without inventing quarter-hour readings',()=>{
+  const series={start:0,values:Array(600).fill(7)};
+  const week=selectSeries(series,7,3600);
+  assert.equal(week.values.length,168);
+  assert.equal(week.start,(600-168)*3600);
+  assert.equal(selectSeries(series,1/24,3600).values.length,1);
+  assert.equal(selectSeries(series,21,3600).values.length,504);
+});
+
+test('seven-day forecast chains aligned passes using previous medians', async()=>{
+  const counts=[];
+  const result=await forecastLong([0],672,async(context,count)=>{
+    const previous=context[2047];
+    assert.equal(previous,counts.reduce((a,b)=>a+b,0));
+    assert(context.slice(2048).every(Number.isNaN));
+    counts.push(count);
+    const median=Array.from({length:count},(_,i)=>previous+i+1);
+    return {median,low:median.map(v=>v-1),high:median.map(v=>v+1)};
+  });
+  assert.deepEqual(counts,[320,320,32]);
+  assert.equal(result.median.length,672);
+  assert.equal(result.median.at(-1),672);
+  assert.equal(result.low[320],320);
+  await assert.rejects(()=>forecastLong([0],673,()=>{}));
+});
+test('horizon labels adapt from minutes to days',()=>{
+  assert.equal(formatDuration(15),'15 minutes');
+  assert.equal(formatDuration(60),'1 hour');
+  assert.equal(formatDuration(90),'1 hour 30 minutes');
+  assert.equal(formatDuration(1439),'23 hours 59 minutes');
+  assert.equal(formatDuration(1440),'1 day');
+  assert.equal(formatDuration(1455),'1 day');
+  assert.equal(formatDuration(1515),'1 day 1 hour');
+  assert.equal(formatDuration(10080),'7 days');
 });
