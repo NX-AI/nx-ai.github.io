@@ -16,9 +16,9 @@ entries cannot be published by accident.
 ## Local preview
 
 ```bash
-pip install -r requirements.txt
-python build.py          # writes _site/index.html
-python -m http.server -d _site
+uv sync --locked
+uv run build.py          # writes _site/index.html
+uv run python -m http.server -d _site
 ```
 
 Without a `GITHUB_TOKEN` the anonymous GitHub API rate limit may apply; the page is then
