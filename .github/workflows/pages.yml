@@ -29,6 +29,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python build.py
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Check search contracts
+        run: node --test search/tests/*.test.mjs
+      - uses: actions/cache@v6
+        with:
+          path: .hf-cache
+          key: search-text-q8-daa72c51243991dfcaf9f9137d2c573d8f7790c0-transformers-4.3.1-${{ runner.os }}
+      - name: Build text search index
+        env:
+          HF_CACHE_DIR: ${{ github.workspace }}/.hf-cache
+        run: npm run build:search
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

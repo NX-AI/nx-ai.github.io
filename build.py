@@ -23,6 +23,7 @@ import datetime as dt
 import json
 import os
 import re
+import shutil
 import sys
 import urllib.error
 import urllib.request
@@ -239,6 +240,40 @@ def main() -> int:
         print(exc, file=sys.stderr)
         return 1
 
+    search_entries = [
+        {
+            "id": d["url"],
+            "title": d["title"],
+            "text": f"Resource type: documentation | Description: {d['description']}",
+            "snippet": d["description"],
+            "group": "documentation",
+            "url": d["url"],
+        }
+        for d in data["documentation"]
+    ]
+    for group in data["groups"]:
+        for project in group["projects"]:
+            labels = [
+                f"Model family: {group['title']}",
+                "Resource type: project",
+                f"Description: {project['description']}",
+                f"Repository: {project['repo']}",
+                f"Licence: {project['license']}",
+                f"Venue: {project['venue']['conf']} {project['venue']['detail']}",
+                "Links: " + ", ".join(link["label"] for link in project["links"]),
+            ]
+            if project.get("install"):
+                labels.append(f"Install: {project['install']}")
+            search_entries.append({
+                "id": project["repo"],
+                "title": project["name"],
+                "text": " | ".join(labels),
+                "snippet": project["description"],
+                "group": group["id"],
+                "url": f"https://github.com/{project['repo']}",
+            })
+    search_entries_json = json.dumps(search_entries, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+
     token = os.environ.get("GITHUB_TOKEN")
     now = dt.datetime.now(dt.timezone.utc)
     today = now.date()
@@ -340,10 +375,17 @@ def main() -> int:
         # "</" is escaped so the JSON cannot close the surrounding <script> element.
         chart_json=json.dumps(charts, separators=(",", ":")).replace("</", "<\\/"),
         has_charts=bool(charts),
+        search_entries_json=search_entries_json,
     )
 
     OUT_DIR.mkdir(exist_ok=True)
     (OUT_DIR / "index.html").write_text(html, encoding="utf-8")
+    search_dir = OUT_DIR / "search"
+    search_dir.mkdir(exist_ok=True)
+    (search_dir / "entries.json").write_text(search_entries_json + "\n", encoding="utf-8")
+    for asset in (ROOT / "search").iterdir():
+        if asset.is_file() and (asset.suffix == ".js" or asset.name == "ui.css"):
+            shutil.copy2(asset, search_dir / asset.name)
     print(f"wrote {OUT_DIR / 'index.html'} ({len(projects)} projects)")
     return 0
 

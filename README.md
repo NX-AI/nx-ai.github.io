@@ -17,12 +17,20 @@ entries cannot be published by accident.
 
 ```bash
 pip install -r requirements.txt
+npm ci
 python build.py          # writes _site/index.html
+npm run build:search     # builds text embeddings and copies the browser runtime
 python -m http.server -d _site
 ```
 
 Without a `GITHUB_TOKEN` the anonymous GitHub API rate limit may apply; the page is then
 built without star counts.
+
+Search uses the text encoder of [EmbeddingGemma 2](https://huggingface.co/onnx-community/embeddinggemma-2-ONNX).
+The build embeds the entries in `projects.yml`; browser workers embed queries with the same model.
+Queries stay in the browser. Semantic search is off by default; after a visitor enables it, it downloads about 377 MB when the model is not cached.
+The browser can cache the model for later searches.
+Keyword search works while the model loads and when semantic search is off or unavailable.
 
 ## Rules
 
@@ -44,3 +52,4 @@ built without star counts.
 | `templates/index.html.j2` | Page layout and styles |
 | `build.py` | Validates `projects.yml`, fetches star counts, renders `_site/index.html` |
 | `.github/workflows/pages.yml` | Build and deployment via GitHub Actions |
+| `search/` | Text index builder, browser worker, ranking and search interface |
