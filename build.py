@@ -23,6 +23,7 @@ import datetime as dt
 import json
 import os
 import re
+import shutil
 import sys
 import urllib.error
 import urllib.request
@@ -344,6 +345,7 @@ def main() -> int:
 
     OUT_DIR.mkdir(exist_ok=True)
     (OUT_DIR / "index.html").write_text(html, encoding="utf-8")
+    shutil.copytree(ROOT / "demo", OUT_DIR / "demo", dirs_exist_ok=True)
     print(f"wrote {OUT_DIR / 'index.html'} ({len(projects)} projects)")
     return 0
 
