@@ -1,0 +1,28 @@
+<section id="forecast-demo" aria-labelledby="forecast-title">
+  <div class="section-head">
+    <div class="tag">TRY TiRex-2</div>
+    <h2 id="forecast-title">Forecast Austria’s electricity generation</h2>
+    <p class="demo-intro">Real-time generation data, forecast locally in your browser. First run downloads a 407 MB model.</p>
+  </div>
+  <div class="demo-panel">
+    <div class="demo-controls">
+      <label>Generation<select id="demo-series" disabled><option>Loading…</option></select></label>
+      <label class="demo-horizon-label" for="demo-context">Context · <output id="demo-context-value" for="demo-context">7 days</output><input id="demo-context" type="range" min="1" max="504" step="1" value="168" aria-label="Context length" aria-valuetext="7 days"></label>
+      <label class="demo-horizon-label" for="demo-horizon">Forecast · <output id="demo-horizon-value" for="demo-horizon">24 hours</output><input id="demo-horizon" type="range" min="1" max="320" step="1" value="96" aria-label="Forecast horizon" aria-valuetext="24 hours"></label>
+      <button class="demo-primary" id="demo-run" disabled>Load model & forecast ↗</button>
+      <button id="demo-cancel" hidden>Cancel</button>
+    </div>
+    <div id="demo-download-progress" hidden>
+      <label for="demo-model-progress" id="demo-progress-label">Downloading checkpoint…</label>
+      <progress id="demo-model-progress" max="100" value="0" aria-labelledby="demo-progress-label"></progress>
+    </div>
+    <div class="demo-chart-heading"><h3 id="demo-chart-title">Austrian generation</h3><div class="demo-legend"><span>Observed</span><span>Median</span><span>10–90% interval</span></div></div>
+    <div class="demo-chart-wrap"><svg id="demo-chart" viewBox="0 0 1100 430" role="img" aria-labelledby="demo-chart-title demo-chart-desc"><desc id="demo-chart-desc">Generation in megawatts and forecast.</desc></svg><div id="demo-tooltip" role="tooltip" hidden><span id="demo-tooltip-time"></span><strong id="demo-tooltip-value"></strong></div><p id="demo-empty">Loading observations…</p></div>
+    <div class="demo-bottom"><p id="demo-status" role="status" aria-live="polite">Loading generation data…</p><div><button id="demo-refresh">Refresh data</button><button id="demo-download" disabled>CSV ↓</button></div></div>
+    <details class="demo-notes"><summary>Data & model details</summary>
+      <p id="demo-data-note"></p><p id="demo-details"></p>
+      <p>Public net generation: <a href="https://energy-charts.info/charts/power/chart.htm?l=en&c=AT">Energy-Charts.info / Fraunhofer ISE</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>). CI refreshes every 30 minutes; source publication can lag by hours. Total generation excludes imports, load and storage consumption. Missing intervals stay missing.</p>
+      <p><a href="https://nx-ai.github.io/tirex-2/how-to/onnx/">TiRex-2 ONNX</a> runs on your device and is cached when possible. Desktop browsers with ample memory are recommended. Forecasts start after the last observation. The band is a nominal 80% interval, not a guarantee; raw ONNX output omits Python detrending and quantile recalibration.</p>
+    </details>
+  </div>
+</section>
