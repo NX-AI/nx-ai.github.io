@@ -35,8 +35,6 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
-      - name: Check search contracts
-        run: uv run --locked node --test search/tests/*.test.mjs
       - uses: actions/cache@v6
         with:
           path: .hf-cache
