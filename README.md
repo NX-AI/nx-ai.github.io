@@ -16,11 +16,11 @@ entries cannot be published by accident.
 ## Local preview
 
 ```bash
-pip install -r requirements.txt
+uv sync --locked
 npm ci
-python build.py          # writes _site/index.html
+uv run build.py          # writes _site/index.html
 npm run build:search     # builds text embeddings and copies the browser runtime
-python -m http.server -d _site
+uv run python -m http.server -d _site
 ```
 
 Without a `GITHUB_TOKEN` the anonymous GitHub API rate limit may apply; the page is then

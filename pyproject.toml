@@ -1,0 +1,9 @@
+[project]
+name = "nxai-github-pages"
+version = "0.1.0"
+description = "NXAI GitHub Pages site"
+requires-python = ">=3.12"
+dependencies = ["Jinja2==3.1.6", "PyYAML==6.0.3"]
+
+[tool.uv]
+package = false
