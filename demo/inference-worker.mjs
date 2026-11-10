@@ -1,6 +1,7 @@
 import {forecastLong, extractForecast} from './forecast-core.mjs';
 import {downloadBytes} from './download.mjs';
-const RUNTIME = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/';
+// Shared with search and staged from the locked npm dependency during the site build.
+const RUNTIME = new URL('../search/runtime/', import.meta.url).href;
 const MODEL = 'https://huggingface.co/NX-AI/TiRex-2/resolve/30788a311699acba7e6393ad9700ea7b7cb9bb2d/model.onnx';
 let ort, session, resolveDownload;
 const status = message => self.postMessage({type: 'status', message});
@@ -16,7 +17,7 @@ async function loadModel() {
     if (!approved) return false;
   }
   status('Loading ONNX Runtime…');
-  ort = await import(RUNTIME + 'ort.min.mjs');
+  ort = await import(RUNTIME + 'ort.wasm.min.mjs');
   ort.env.wasm.wasmPaths = RUNTIME;
   // GitHub Pages has no cross-origin isolation: use one WASM thread in this worker.
   ort.env.wasm.numThreads = 1;
