@@ -7,8 +7,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Runs build.py on a temporary copy of the site sources with all network access refused.
-// Set NXAI_BUILD_PYTHON to a Python interpreter that has requirements.txt installed
-// (default: python3 on PATH, as in the GitHub Actions workflow).
+// Run with `uv run --locked node --test search/tests/*.test.mjs` to use the project dependencies.
+// NXAI_BUILD_PYTHON can override the default python3 interpreter on PATH.
 const python = process.env.NXAI_BUILD_PYTHON || 'python3';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const offlineRunner = `
@@ -41,10 +41,11 @@ function build() {
   if (built) return built;
   const probe = run(['-c', 'import jinja2, yaml'], root);
   assert.equal(probe.status, 0,
-    `${python} cannot import jinja2 and yaml; set NXAI_BUILD_PYTHON to a Python with requirements.txt installed.\n${probe.stderr ?? probe.error}`);
+    `${python} cannot import jinja2 and yaml; run tests with uv run --locked node --test search/tests/*.test.mjs, or set NXAI_BUILD_PYTHON to a Python with the project dependencies installed.\n${probe.stderr ?? probe.error}`);
   workdir = fs.mkdtempSync(path.join(os.tmpdir(), 'nxai-build-entries-'));
   for (const file of ['build.py', 'projects.yml']) fs.copyFileSync(path.join(root, file), path.join(workdir, file));
   fs.cpSync(path.join(root, 'templates'), path.join(workdir, 'templates'), { recursive: true });
+  fs.cpSync(path.join(root, 'demo'), path.join(workdir, 'demo'), { recursive: true });
   const searchDir = path.join(root, 'search');
   fs.cpSync(searchDir, path.join(workdir, 'search'), {
     recursive: true,

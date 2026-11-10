@@ -26,6 +26,10 @@ export function stageSite(outputDir) {
   const runtime = path.join(searchDir, 'runtime');
   fs.mkdirSync(runtime, { recursive: true });
   fs.copyFileSync(path.join(transformers, 'dist', 'transformers.min.js'), path.join(runtime, 'transformers.min.js'));
+  // The forecast worker uses the same ONNX Runtime package as search, with its WASM-only entry point.
+  for (const name of ['ort.wasm.min.mjs', 'ort-wasm-simd-threaded.mjs', 'ort-wasm-simd-threaded.wasm']) {
+    fs.copyFileSync(path.join(modules, 'onnxruntime-web', 'dist', name), path.join(runtime, name));
+  }
   for (const build of ['asyncify', 'jsep']) {
     for (const name of [`ort-wasm-simd-threaded.${build}.mjs`, `ort-wasm-simd-threaded.${build}.wasm`]) {
       fs.copyFileSync(path.join(modules, 'onnxruntime-web', 'dist', name), path.join(runtime, name));

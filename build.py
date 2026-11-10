@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import hashlib
 import os
 import re
 import shutil
@@ -361,6 +362,8 @@ def main() -> int:
         lstrip_blocks=True,
     )
     html = env.get_template("index.html.j2").render(
+        demo_script_version=hashlib.sha256((ROOT / "demo/app.mjs").read_bytes()).hexdigest()[:12],
+        demo_style_version=hashlib.sha256((ROOT / "demo/style.css").read_bytes()).hexdigest()[:12],
         documentation=data["documentation"],
         groups=data["groups"],
         total=len(projects),
@@ -380,6 +383,7 @@ def main() -> int:
 
     OUT_DIR.mkdir(exist_ok=True)
     (OUT_DIR / "index.html").write_text(html, encoding="utf-8")
+    shutil.copytree(ROOT / "demo", OUT_DIR / "demo", dirs_exist_ok=True)
     search_dir = OUT_DIR / "search"
     search_dir.mkdir(exist_ok=True)
     (search_dir / "entries.json").write_text(search_entries_json + "\n", encoding="utf-8")
